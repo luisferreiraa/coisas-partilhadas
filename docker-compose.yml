@@ -1,22 +1,16 @@
-version: "3.9"
-
 services:
   app:
-    image: node:20-alpine
+    build: .
     container_name: nextjs_app
-    working_dir: /app
-    volumes:
-      - ./:/app 
-      - /app/node_modules
-    command: sh -c "npm install && npm run dev"
+    ports:
+      - "3006:3006"         # porta exposta no VPS
     env_file:
       - .env
-    ports:
-      - "3006:3006"
     networks:
       - web
     depends_on:
       - db
+    restart: unless-stopped  # garante que reinicia se houver crash
 
   db:
     image: postgres:16-alpine
