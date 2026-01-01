@@ -6,7 +6,6 @@ services:
       - "3006:3006"
     environment:
       - NODE_ENV=production
-      - PORT=3006
     depends_on:
       - db
     networks:

@@ -2,10 +2,9 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copiar apenas package.json, package-lock.json e Prisma
+# Instalar dependências
 COPY package*.json ./
-COPY prisma ./prisma/
-
+COPY prisma ./prisma
 RUN npm ci
 
 # Copiar restante do código
@@ -26,8 +25,8 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 # Copiar build da aplicação
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
@@ -36,7 +35,7 @@ USER nextjs
 
 EXPOSE 3006
 ENV PORT 3006
-ENV HOSTNAME "0.0.0.0"
+ENV NODE_ENV production
 
-# Rodar a aplicação standalone
-CMD ["node", "server.js"]
+# Rodar Next.js em produção
+CMD ["npx", "next", "start", "-p", "3006"]
