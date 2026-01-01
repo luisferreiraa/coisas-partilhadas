@@ -4,11 +4,17 @@ services:
     container_name: nextjs_app
     ports:
       - "3006:3006"
+    
+    # Manter o env_file para a fase de build ou outras variáveis
     env_file:
       - .env
+    
+    # 🎯 Injeção Explícita da Variável de Conexão
     environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - NODE_ENV=production 
+      - NODE_ENV=production
+      # Valor copiado diretamente do seu .env. O hostname 'db' é crucial.
+      - DATABASE_URL="postgresql://coisas_user:password123@db:5432/coisas_partilhadas"
+
     depends_on:
       db:
         condition: service_healthy
