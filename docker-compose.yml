@@ -1,13 +1,12 @@
-version: "3.9"
-
 services:
   app:
-    image: coisas-partilhadas-app
+    build: .
     container_name: nextjs_app
     ports:
       - "3006:3006"
-    env_file:
-      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3006
     depends_on:
       - db
     networks:
