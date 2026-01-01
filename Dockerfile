@@ -1,52 +1,42 @@
-# Dockerfile
+# Build
 FROM node:20-alpine AS builder
-
 WORKDIR /app
 
-# Copiar package.json e package-lock.json
+# Copiar package.json e lock
 COPY package*.json ./
 COPY prisma ./prisma/
 
 # Instalar dependências
 RUN npm ci
 
-# Copiar o restante do código
+# Copiar código
 COPY . .
 
 # Gerar Prisma Client
 RUN npx prisma generate
 
-# Build da aplicação
+# Build da app
 RUN npm run build
 
 # Produção
 FROM node:20-alpine AS runner
-
 WORKDIR /app
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
+ENV PORT=3006
 
-# Criar usuário não-root
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Criar user não-root
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
-# Copiar de builder
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
-
-# Copiar scripts necessários
+# Copiar apenas o necessário
 COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/next.config.js ./next.config.js
-COPY --from=builder /app/start.sh ./start.sh
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/prisma ./prisma
 
 USER nextjs
-
 EXPOSE 3006
 
-ENV PORT 3006
-ENV HOSTNAME "0.0.0.0"
-
-CMD ["node", ".next/standalone/server.js"]
+CMD ["node", ".next/server.js"]
