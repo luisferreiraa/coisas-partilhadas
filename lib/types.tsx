@@ -1,4 +1,4 @@
-export type ItemType = "livro" | "filme" | "app" | "website" | "local" | "evento"
+export type ItemType = "livro" | "filme" | "serie" | "curso" | "app" | "website" | "local" | "evento"
 
 export type Item = {
     id: string
@@ -23,8 +23,10 @@ export type CreateItemData = Omit<Item, "id" | "addedAt">
 export const ITEM_TYPES: { value: ItemType; label: string; icon: string }[] = [
     { value: "livro", label: "Livros", icon: "📚" },
     { value: "filme", label: "Filmes", icon: "🎬" },
+    { value: "serie", label: "Séries", icon: "📺" },
     { value: "app", label: "Apps", icon: "📱" },
     { value: "website", label: "Websites", icon: "🌐" },
+    { value: "curso", label: "Cursos", icon: "👩‍🎓" },
     { value: "local", label: "Locais", icon: "📍" },
     { value: "evento", label: "Eventos", icon: "🎉" },
 ]
