@@ -49,4 +49,4 @@ EXPOSE 3006
 ENV PORT 3006
 ENV HOSTNAME "0.0.0.0"
 
-CMD ["sh", "start.sh"]
+CMD ["node", ".next/standalone/server.js"]
