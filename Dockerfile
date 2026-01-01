@@ -20,9 +20,11 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 # ADICIONE ESTA COPIA: Copia dependências de produção
-# O Next.js STANDALONE copia o que ele precisa, mas o prisma CLI 
-# para o 'migrate deploy' precisa do seu node_modules de produção.
 COPY --from=builder /app/node_modules ./node_modules 
+
+# 💥 CORREÇÃO CRÍTICA AQUI: Copiar o prisma.config.ts da raiz do builder
+# O CLI do Prisma (migrate deploy) precisa deste arquivo para resolver a DATABASE_URL.
+COPY --from=builder /app/prisma.config.ts ./ 
 
 # Copias que você já tinha
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
@@ -34,5 +36,6 @@ USER nextjs
 EXPOSE 3006
 ENV PORT=3006
 
-# Use npx, que encontrará o binário Prisma dentro do node_modules copiado
+# Mantenha o CMD original. A variável DATABASE_URL deve ser resolvida
+# corretamente agora que o prisma.config.ts está presente.
 CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
