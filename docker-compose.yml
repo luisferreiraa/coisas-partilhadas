@@ -11,7 +11,7 @@ services:
         condition: service_healthy
     networks:
       - web
-    command: sh -c "npx prisma migrate deploy && node server.js"
+    command: sh -c "prisma migrate deploy && node server.js"
 
   db:
     image: postgres:16-alpine
