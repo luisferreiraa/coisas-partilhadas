@@ -31,4 +31,5 @@ USER nextjs
 EXPOSE 3006
 ENV PORT=3006
 
-CMD ["node", "server.js"]
+#CMD ["node", "server.js"]
+CMD ["sh", "-c", "prisma migrate deploy && node server.js"]
