@@ -25,13 +25,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
-# Script de inicialização
-COPY --chown=nextjs:nodejs docker-entrypoint.sh ./
-RUN chmod +x docker-entrypoint.sh
-
 USER nextjs
 EXPOSE 3006
 ENV PORT=3006
 
-ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["node", "server.js"]

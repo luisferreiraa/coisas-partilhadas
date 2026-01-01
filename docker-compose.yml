@@ -7,9 +7,11 @@ services:
     environment:
       - NODE_ENV=production
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - web
+    command: sh -c "npx prisma migrate deploy && node server.js"
 
   db:
     image: postgres:16-alpine
@@ -21,6 +23,11 @@ services:
       - pgdata:/var/lib/postgresql/data
     networks:
       - web
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   pgdata:
