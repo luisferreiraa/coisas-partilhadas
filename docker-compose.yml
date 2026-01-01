@@ -13,7 +13,7 @@ services:
     environment:
       - NODE_ENV=production
       # Valor copiado diretamente do seu .env. O hostname 'db' é crucial.
-      - DATABASE_URL="postgresql://coisas_user:password123@db:5432/coisas_partilhadas"
+      - DATABASE_URL=postgresql://coisas_user:password123@db:5432/coisas_partilhadas
 
     depends_on:
       db:
