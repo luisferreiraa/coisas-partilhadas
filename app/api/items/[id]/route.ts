@@ -1,57 +1,44 @@
 // app/api/items/[id]/route.ts
 
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { writeFile, unlink } from "fs/promises"
 import { join } from "path"
 import { v4 as uuidv4 } from "uuid"
 import prisma from "@/lib/prisma"
 
 export async function GET(
-    _req: Request,
-    { params }: { params: { id: string } }
+    _req: NextRequest,
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await context.params
+
         const item = await prisma.item.findUnique({
-            where: { id: params.id },
+            where: { id },
         })
 
         if (!item) {
-            return NextResponse.json(
-                { error: "Item not found" },
-                { status: 404 }
-            )
+            return NextResponse.json({ error: "Item not found" }, { status: 404 })
         }
 
         return NextResponse.json(item)
     } catch (error) {
         console.error("Error fetching item:", error)
-        return NextResponse.json(
-            { error: "Failed to fetch item" },
-            { status: 500 }
-        )
+        return NextResponse.json({ error: "Failed to fetch item" }, { status: 500 })
     }
 }
 
 export async function PUT(
-    req: Request,
-    { params }: { params: { id: string } }
+    req: NextRequest,
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await context.params
         const formData = await req.formData()
 
-        // Buscar item atual para verificar se tem arquivo antigo
-        const currentItem = await prisma.item.findUnique({
-            where: { id: params.id },
-        })
+        const currentItem = await prisma.item.findUnique({ where: { id } })
+        if (!currentItem) return NextResponse.json({ error: "Item not found" }, { status: 404 })
 
-        if (!currentItem) {
-            return NextResponse.json(
-                { error: "Item not found" },
-                { status: 404 }
-            )
-        }
-
-        // Extrair dados do formulário
         const type = formData.get("type") as string
         const title = formData.get("title") as string
         const description = formData.get("description") as string
@@ -63,53 +50,30 @@ export async function PUT(
 
         let filePath = currentItem.filePath
 
-        // Se remover arquivo existente
         if (removeFile === "true" && currentItem.filePath) {
-            // Remover arquivo do sistema de arquivos
-            const fs = await import("fs")
             const filePathOnDisk = join(process.cwd(), "public", currentItem.filePath)
-
-            if (fs.existsSync(filePathOnDisk)) {
-                await unlink(filePathOnDisk)
-            }
-
+            await unlink(filePathOnDisk).catch(() => { })
             filePath = null
         }
 
-        // Processar novo upload de arquivo se existir
         if (file && file.size > 0) {
-            // Remover arquivo antigo se existir
             if (currentItem.filePath) {
-                const fs = await import("fs")
                 const oldFilePath = join(process.cwd(), "public", currentItem.filePath)
-
-                if (fs.existsSync(oldFilePath)) {
-                    await unlink(oldFilePath)
-                }
+                await unlink(oldFilePath).catch(() => { })
             }
 
             const bytes = await file.arrayBuffer()
             const buffer = Buffer.from(bytes)
-
-            // Gerar nome único para o arquivo
             const uniqueFileName = `${uuidv4()}-${file.name}`
             const uploadDir = join(process.cwd(), "public", "uploads")
-
-            // Criar diretório se não existir
-            const fs = await import("fs")
-            if (!fs.existsSync(uploadDir)) {
-                fs.mkdirSync(uploadDir, { recursive: true })
-            }
-
+            await import("fs").then(fs => fs.mkdirSync(uploadDir, { recursive: true }))
             const filePathOnDisk = join(uploadDir, uniqueFileName)
             await writeFile(filePathOnDisk, buffer)
-
             filePath = `/uploads/${uniqueFileName}`
         }
 
-        // Atualizar item no banco de dados
         const item = await prisma.item.update({
-            where: { id: params.id },
+            where: { id },
             data: {
                 type: type || currentItem.type,
                 title: title || currentItem.title,
@@ -124,51 +88,29 @@ export async function PUT(
         return NextResponse.json(item)
     } catch (error) {
         console.error("Error updating item:", error)
-        return NextResponse.json(
-            { error: "Failed to update item" },
-            { status: 500 }
-        )
+        return NextResponse.json({ error: "Failed to update item" }, { status: 500 })
     }
 }
 
 export async function DELETE(
-    _req: Request,
-    { params }: { params: { id: string } }
+    _req: NextRequest,
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
-        // Buscar item para verificar se tem arquivo associado
-        const item = await prisma.item.findUnique({
-            where: { id: params.id },
-        })
+        const { id } = await context.params
 
-        if (!item) {
-            return NextResponse.json(
-                { error: "Item not found" },
-                { status: 404 }
-            )
-        }
+        const item = await prisma.item.findUnique({ where: { id } })
+        if (!item) return NextResponse.json({ error: "Item not found" }, { status: 404 })
 
-        // Remover arquivo do sistema de arquivos se existir
         if (item.filePath) {
-            const fs = await import("fs")
             const filePath = join(process.cwd(), "public", item.filePath)
-
-            if (fs.existsSync(filePath)) {
-                await unlink(filePath)
-            }
+            await unlink(filePath).catch(() => { })
         }
 
-        // Deletar item do banco de dados
-        await prisma.item.delete({
-            where: { id: params.id },
-        })
-
+        await prisma.item.delete({ where: { id } })
         return NextResponse.json({ ok: true })
     } catch (error) {
         console.error("Error deleting item:", error)
-        return NextResponse.json(
-            { error: "Failed to delete item" },
-            { status: 500 }
-        )
+        return NextResponse.json({ error: "Failed to delete item" }, { status: 500 })
     }
 }
