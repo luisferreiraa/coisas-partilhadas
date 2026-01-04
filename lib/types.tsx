@@ -1,14 +1,14 @@
-export type ItemType = "livro" | "filme" | "serie" | "curso" | "app" | "website" | "local" | "evento"
+export type ItemType = "livro" | "filme" | "serie" | "curso" | "app" | "website" | "lista" | "local" | "evento"
 
 export type Item = {
     id: string
     type: ItemType
     title: string
     description: string
-    theme: string
+    theme: string[]
     addedBy: string
-    url?: string
-    filePath?: string
+    url?: string[]
+    filePath?: string[]
     addedAt: string
 }
 
@@ -26,6 +26,7 @@ export const ITEM_TYPES: { value: ItemType; label: string; icon: string }[] = [
     { value: "serie", label: "Séries", icon: "📺" },
     { value: "app", label: "Apps", icon: "📱" },
     { value: "website", label: "Websites", icon: "🌐" },
+    { value: "lista", label: "Listas", icon: "📝" },
     { value: "curso", label: "Cursos", icon: "👩‍🎓" },
     { value: "local", label: "Locais", icon: "📍" },
     { value: "evento", label: "Eventos", icon: "🎉" },

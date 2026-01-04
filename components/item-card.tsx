@@ -21,8 +21,11 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"       // UI components for displaying a confirmation modal (for deletion).
 
-async function downloadItem(itemId: string) {
-    const res = await fetch(`/api/items/${itemId}/download`)
+async function downloadItem(itemId: string, fileUrl: string) {
+    const res = await fetch(
+        `/api/items/${itemId}/download?file=${encodeURIComponent(fileUrl)}`
+    )
+
     if (!res.ok) {
         alert("Erro ao gerar download")
         return
@@ -121,9 +124,15 @@ export function ItemCard({ item }: { item: Item }) {
                         <Badge variant="secondary" className="text-xs">
                             {formatType(item.type)}
                         </Badge>
-                        <Badge variant="outline" className="text-xs">
+                        {/* <Badge variant="outline" className="text-xs">
                             {item.theme}
-                        </Badge>
+                        </Badge> */}
+
+                        <div className="flex flex-wrap gap-1">
+                            {item.theme.map((t) => (
+                                <Badge key={t} variant="outline" className="text-xs">{t}</Badge>
+                            ))}
+                        </div>
                     </div>
                     {/* Item Title and Description */}
                     <CardTitle className="text-balance line-clamp-2">{item.title}</CardTitle>
@@ -137,35 +146,43 @@ export function ItemCard({ item }: { item: Item }) {
 
                     {/* Action Buttons Section */}
                     <div className="flex flex-col gap-2">
-                        {/* Link and Download Buttons */}
-                        <div className="flex gap-2">
-                            {/* External Link Button (only if URL exists) */}
-                            {item.url && (
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="flex-1 bg-transparent"
-                                    asChild     // Render as an anchor tag.
-                                >
-                                    <a href={item.url} target="_blank" rel="noopener noreferrer">
-                                        <ExternalLink className="w-3 h-3 mr-1" />
-                                        Ver Link
-                                    </a>
-                                </Button>
-                            )}
+                        {/* Links */}
+                        {(item.url ?? []).length > 0 && (
+                            <div className="flex gap-2 flex-wrap">
+                                {(item.url ?? []).map((link, idx) => (
+                                    <Button
+                                        key={idx}
+                                        size="sm"
+                                        variant="outline"
+                                        className="flex-1 bg-transparent"
+                                        asChild
+                                    >
+                                        <a href={link} target="_blank" rel="noopener noreferrer">
+                                            <ExternalLink className="w-3 h-3 mr-1" />
+                                            Ver Link {idx + 1}
+                                        </a>
+                                    </Button>
+                                ))}
+                            </div>
+                        )}
 
-                            {item.filePath && (
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className={`flex-1 bg-transparent ${item.url ? "" : "col-span-2"}`}
-                                    onClick={() => downloadItem(item.id)}
-                                >
-                                    <Download className="w-3 h-3 mr-1" />
-                                    <span className="truncate">{getFileName(item.filePath)}</span>
-                                </Button>
-                            )}
-                        </div>
+                        {/* Files */}
+                        {(item.filePath ?? []).length > 0 && (
+                            <div className="flex gap-2 flex-wrap">
+                                {(item.filePath ?? []).map((fp, idx) => (
+                                    <Button
+                                        key={idx}
+                                        size="sm"
+                                        variant="outline"
+                                        className={`flex-1 bg-transparent`}
+                                        onClick={() => downloadItem(item.id, fp)}
+                                    >
+                                        <Download className="w-3 h-3 mr-1" />
+                                        <span className="truncate">{getFileName(fp)}</span>
+                                    </Button>
+                                ))}
+                            </div>
+                        )}
 
                         {/* Edit and Delete Buttons */}
                         <div className="flex gap-2">

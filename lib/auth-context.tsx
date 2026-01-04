@@ -1,3 +1,5 @@
+// lib/auth-context.tsx
+
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
@@ -9,11 +11,17 @@ type User = {
 
 type AuthContextType = {
     user: User | null
-    login: (name: string) => void
+    login: (name: string, password: string) => boolean  // retorna true se login OK, false caso contrário
     logout: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+// Utilizadores pré-definidos
+const USERS = [
+    { name: "[REDACTED_NAME]", password: "1234" },
+    { name: "[REDACTED_NAME]", password: "abcd" },
+]
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
@@ -25,10 +33,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, [])
 
-    const login = (name: string) => {
-        const newUser = { id: Date.now().toString(), name }
+    const login = (name: string, password: string) => {
+        const matchedUser = USERS.find(u => u.name === name && u.password === password)
+        if (!matchedUser) return false  // login falhou
+
+        const newUser = { id: Date.now().toString(), name: matchedUser.name }
         setUser(newUser)
         localStorage.setItem("coisas-partilhadas-user", JSON.stringify(newUser))
+        return true  // login OK
     }
 
     const logout = () => {
@@ -46,3 +58,4 @@ export function useAuth() {
     }
     return context
 }
+

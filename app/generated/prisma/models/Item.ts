@@ -29,10 +29,7 @@ export type ItemMinAggregateOutputType = {
   type: string | null
   title: string | null
   description: string | null
-  theme: string | null
   addedBy: string | null
-  url: string | null
-  filePath: string | null
   addedAt: Date | null
 }
 
@@ -41,10 +38,7 @@ export type ItemMaxAggregateOutputType = {
   type: string | null
   title: string | null
   description: string | null
-  theme: string | null
   addedBy: string | null
-  url: string | null
-  filePath: string | null
   addedAt: Date | null
 }
 
@@ -67,10 +61,7 @@ export type ItemMinAggregateInputType = {
   type?: true
   title?: true
   description?: true
-  theme?: true
   addedBy?: true
-  url?: true
-  filePath?: true
   addedAt?: true
 }
 
@@ -79,10 +70,7 @@ export type ItemMaxAggregateInputType = {
   type?: true
   title?: true
   description?: true
-  theme?: true
   addedBy?: true
-  url?: true
-  filePath?: true
   addedAt?: true
 }
 
@@ -176,10 +164,10 @@ export type ItemGroupByOutputType = {
   type: string
   title: string
   description: string
-  theme: string
+  theme: string[]
   addedBy: string
-  url: string | null
-  filePath: string | null
+  url: string[]
+  filePath: string[]
   addedAt: Date
   _count: ItemCountAggregateOutputType | null
   _min: ItemMinAggregateOutputType | null
@@ -209,10 +197,10 @@ export type ItemWhereInput = {
   type?: Prisma.StringFilter<"Item"> | string
   title?: Prisma.StringFilter<"Item"> | string
   description?: Prisma.StringFilter<"Item"> | string
-  theme?: Prisma.StringFilter<"Item"> | string
+  theme?: Prisma.StringNullableListFilter<"Item">
   addedBy?: Prisma.StringFilter<"Item"> | string
-  url?: Prisma.StringNullableFilter<"Item"> | string | null
-  filePath?: Prisma.StringNullableFilter<"Item"> | string | null
+  url?: Prisma.StringNullableListFilter<"Item">
+  filePath?: Prisma.StringNullableListFilter<"Item">
   addedAt?: Prisma.DateTimeFilter<"Item"> | Date | string
 }
 
@@ -223,8 +211,8 @@ export type ItemOrderByWithRelationInput = {
   description?: Prisma.SortOrder
   theme?: Prisma.SortOrder
   addedBy?: Prisma.SortOrder
-  url?: Prisma.SortOrderInput | Prisma.SortOrder
-  filePath?: Prisma.SortOrderInput | Prisma.SortOrder
+  url?: Prisma.SortOrder
+  filePath?: Prisma.SortOrder
   addedAt?: Prisma.SortOrder
 }
 
@@ -236,10 +224,10 @@ export type ItemWhereUniqueInput = Prisma.AtLeast<{
   type?: Prisma.StringFilter<"Item"> | string
   title?: Prisma.StringFilter<"Item"> | string
   description?: Prisma.StringFilter<"Item"> | string
-  theme?: Prisma.StringFilter<"Item"> | string
+  theme?: Prisma.StringNullableListFilter<"Item">
   addedBy?: Prisma.StringFilter<"Item"> | string
-  url?: Prisma.StringNullableFilter<"Item"> | string | null
-  filePath?: Prisma.StringNullableFilter<"Item"> | string | null
+  url?: Prisma.StringNullableListFilter<"Item">
+  filePath?: Prisma.StringNullableListFilter<"Item">
   addedAt?: Prisma.DateTimeFilter<"Item"> | Date | string
 }, "id">
 
@@ -250,8 +238,8 @@ export type ItemOrderByWithAggregationInput = {
   description?: Prisma.SortOrder
   theme?: Prisma.SortOrder
   addedBy?: Prisma.SortOrder
-  url?: Prisma.SortOrderInput | Prisma.SortOrder
-  filePath?: Prisma.SortOrderInput | Prisma.SortOrder
+  url?: Prisma.SortOrder
+  filePath?: Prisma.SortOrder
   addedAt?: Prisma.SortOrder
   _count?: Prisma.ItemCountOrderByAggregateInput
   _max?: Prisma.ItemMaxOrderByAggregateInput
@@ -266,10 +254,10 @@ export type ItemScalarWhereWithAggregatesInput = {
   type?: Prisma.StringWithAggregatesFilter<"Item"> | string
   title?: Prisma.StringWithAggregatesFilter<"Item"> | string
   description?: Prisma.StringWithAggregatesFilter<"Item"> | string
-  theme?: Prisma.StringWithAggregatesFilter<"Item"> | string
+  theme?: Prisma.StringNullableListFilter<"Item">
   addedBy?: Prisma.StringWithAggregatesFilter<"Item"> | string
-  url?: Prisma.StringNullableWithAggregatesFilter<"Item"> | string | null
-  filePath?: Prisma.StringNullableWithAggregatesFilter<"Item"> | string | null
+  url?: Prisma.StringNullableListFilter<"Item">
+  filePath?: Prisma.StringNullableListFilter<"Item">
   addedAt?: Prisma.DateTimeWithAggregatesFilter<"Item"> | Date | string
 }
 
@@ -278,10 +266,10 @@ export type ItemCreateInput = {
   type: string
   title: string
   description: string
-  theme: string
+  theme?: Prisma.ItemCreatethemeInput | string[]
   addedBy: string
-  url?: string | null
-  filePath?: string | null
+  url?: Prisma.ItemCreateurlInput | string[]
+  filePath?: Prisma.ItemCreatefilePathInput | string[]
   addedAt?: Date | string
 }
 
@@ -290,10 +278,10 @@ export type ItemUncheckedCreateInput = {
   type: string
   title: string
   description: string
-  theme: string
+  theme?: Prisma.ItemCreatethemeInput | string[]
   addedBy: string
-  url?: string | null
-  filePath?: string | null
+  url?: Prisma.ItemCreateurlInput | string[]
+  filePath?: Prisma.ItemCreatefilePathInput | string[]
   addedAt?: Date | string
 }
 
@@ -302,10 +290,10 @@ export type ItemUpdateInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
-  theme?: Prisma.StringFieldUpdateOperationsInput | string
+  theme?: Prisma.ItemUpdatethemeInput | string[]
   addedBy?: Prisma.StringFieldUpdateOperationsInput | string
-  url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  filePath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  url?: Prisma.ItemUpdateurlInput | string[]
+  filePath?: Prisma.ItemUpdatefilePathInput | string[]
   addedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -314,10 +302,10 @@ export type ItemUncheckedUpdateInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
-  theme?: Prisma.StringFieldUpdateOperationsInput | string
+  theme?: Prisma.ItemUpdatethemeInput | string[]
   addedBy?: Prisma.StringFieldUpdateOperationsInput | string
-  url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  filePath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  url?: Prisma.ItemUpdateurlInput | string[]
+  filePath?: Prisma.ItemUpdatefilePathInput | string[]
   addedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -326,10 +314,10 @@ export type ItemCreateManyInput = {
   type: string
   title: string
   description: string
-  theme: string
+  theme?: Prisma.ItemCreatethemeInput | string[]
   addedBy: string
-  url?: string | null
-  filePath?: string | null
+  url?: Prisma.ItemCreateurlInput | string[]
+  filePath?: Prisma.ItemCreatefilePathInput | string[]
   addedAt?: Date | string
 }
 
@@ -338,10 +326,10 @@ export type ItemUpdateManyMutationInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
-  theme?: Prisma.StringFieldUpdateOperationsInput | string
+  theme?: Prisma.ItemUpdatethemeInput | string[]
   addedBy?: Prisma.StringFieldUpdateOperationsInput | string
-  url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  filePath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  url?: Prisma.ItemUpdateurlInput | string[]
+  filePath?: Prisma.ItemUpdatefilePathInput | string[]
   addedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -350,11 +338,19 @@ export type ItemUncheckedUpdateManyInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
-  theme?: Prisma.StringFieldUpdateOperationsInput | string
+  theme?: Prisma.ItemUpdatethemeInput | string[]
   addedBy?: Prisma.StringFieldUpdateOperationsInput | string
-  url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  filePath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  url?: Prisma.ItemUpdateurlInput | string[]
+  filePath?: Prisma.ItemUpdatefilePathInput | string[]
   addedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type StringNullableListFilter<$PrismaModel = never> = {
+  equals?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel> | null
+  has?: string | Prisma.StringFieldRefInput<$PrismaModel> | null
+  hasEvery?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
+  hasSome?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
+  isEmpty?: boolean
 }
 
 export type ItemCountOrderByAggregateInput = {
@@ -374,10 +370,7 @@ export type ItemMaxOrderByAggregateInput = {
   type?: Prisma.SortOrder
   title?: Prisma.SortOrder
   description?: Prisma.SortOrder
-  theme?: Prisma.SortOrder
   addedBy?: Prisma.SortOrder
-  url?: Prisma.SortOrder
-  filePath?: Prisma.SortOrder
   addedAt?: Prisma.SortOrder
 }
 
@@ -386,19 +379,39 @@ export type ItemMinOrderByAggregateInput = {
   type?: Prisma.SortOrder
   title?: Prisma.SortOrder
   description?: Prisma.SortOrder
-  theme?: Prisma.SortOrder
   addedBy?: Prisma.SortOrder
-  url?: Prisma.SortOrder
-  filePath?: Prisma.SortOrder
   addedAt?: Prisma.SortOrder
+}
+
+export type ItemCreatethemeInput = {
+  set: string[]
+}
+
+export type ItemCreateurlInput = {
+  set: string[]
+}
+
+export type ItemCreatefilePathInput = {
+  set: string[]
 }
 
 export type StringFieldUpdateOperationsInput = {
   set?: string
 }
 
-export type NullableStringFieldUpdateOperationsInput = {
-  set?: string | null
+export type ItemUpdatethemeInput = {
+  set?: string[]
+  push?: string | string[]
+}
+
+export type ItemUpdateurlInput = {
+  set?: string[]
+  push?: string | string[]
+}
+
+export type ItemUpdatefilePathInput = {
+  set?: string[]
+  push?: string | string[]
 }
 
 export type DateTimeFieldUpdateOperationsInput = {
@@ -465,10 +478,10 @@ export type $ItemPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     type: string
     title: string
     description: string
-    theme: string
+    theme: string[]
     addedBy: string
-    url: string | null
-    filePath: string | null
+    url: string[]
+    filePath: string[]
     addedAt: Date
   }, ExtArgs["result"]["item"]>
   composites: {}
@@ -897,10 +910,10 @@ export interface ItemFieldRefs {
   readonly type: Prisma.FieldRef<"Item", 'String'>
   readonly title: Prisma.FieldRef<"Item", 'String'>
   readonly description: Prisma.FieldRef<"Item", 'String'>
-  readonly theme: Prisma.FieldRef<"Item", 'String'>
+  readonly theme: Prisma.FieldRef<"Item", 'String[]'>
   readonly addedBy: Prisma.FieldRef<"Item", 'String'>
-  readonly url: Prisma.FieldRef<"Item", 'String'>
-  readonly filePath: Prisma.FieldRef<"Item", 'String'>
+  readonly url: Prisma.FieldRef<"Item", 'String[]'>
+  readonly filePath: Prisma.FieldRef<"Item", 'String[]'>
   readonly addedAt: Prisma.FieldRef<"Item", 'DateTime'>
 }
     

@@ -20,8 +20,8 @@ import { Item, ItemType, UpdateItemData, CreateItemData } from "./types"
  */
 type ItemsContextType = {
     items: Item[]       // The complete, unfiltered list of all items retrieved from the API.
-    addItem: (item: Omit<CreateItemData, "id" | "addedAt">, file?: File) => Promise<void>       // Sends a request to the API to create a new item.
-    updateItem: (id: string, item: UpdateItemData, file?: File) => Promise<void>            // Sends a request to the API to update an existing item.
+    addItem: (item: Omit<CreateItemData, "id" | "addedAt">, files?: File[]) => Promise<void>       // Sends a request to the API to create a new item.
+    updateItem: (id: string, item: UpdateItemData, files?: File[]) => Promise<void>            // Sends a request to the API to update an existing item.
     deleteItem: (id: string) => Promise<void>       // Sends a request to the API to delete an item.
     filteredItems: Item[]       // The list of items after applying type, theme, and search filters.
     selectedType: ItemType | "all"      // The currently active filter for item type.
@@ -31,6 +31,11 @@ type ItemsContextType = {
     searchQuery: string     // The current text query used for searching item title and description.
     setSearchQuery: (query: string) => void     // Function to set the search query.
     themes: string[]        // A dynamically generated list of all unique themes present in the current 'items' data.
+    pagination: {
+        page: number
+        totalPages: number
+    }
+    setPage: (page: number) => void
 }
 
 // Create the context object, initialized with 'undefined'.
@@ -55,31 +60,47 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
     // State for text search queries.
     const [searchQuery, setSearchQuery] = useState("")
 
+    const [page, setPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(1)
+
     // --- Load Items from database (API) ---
 
-    // useEffect hook runs once on component mount to fetch initial data.
     useEffect(() => {
         const loadItems = async () => {
-            try {
-                // Fetch all items frm the serverless API enpoint.
-                const res = await fetch("/api/items")
 
-                // Check for HTTP errors.
+            const ITEMS_PER_PAGE = 9
+
+            try {
+                // Fetch items da API com paginação
+                const res = await fetch(`/api/items?page=${page}&pageSize=${ITEMS_PER_PAGE}`)
+
+                // Verifica se a resposta HTTP foi OK
                 if (!res.ok) throw new Error("Erro ao carregar items")
 
-                // Parse the JSON response body.    
+                // Converte para JSON
                 const data = await res.json()
 
-                // Update the state with the fetched list of items.
-                setItems(data)
+                // Proteção: garante que data.items é um array
+                if (!Array.isArray(data.items)) {
+                    console.error("Resposta inválida da API:", data)
+                    setItems([])
+                    setTotalPages(1)
+                    return
+                }
+
+                // Atualiza o estado com os items e o total de páginas
+                setItems(data.items)
+                setTotalPages(data.totalPages ?? 1)
             } catch (err) {
-                // Log any errors that ocurred during the fetch or parsing.
-                console.error(err)
+                console.error("Erro no loadItems:", err)
+                setItems([])
+                setTotalPages(1)
             }
         }
 
-        loadItems()     // Empty dependency arrary ensures this runs only once on mount.
-    }, [])
+        loadItems()
+    }, [page])
+
 
     // --- CRUD Operations ---
 
@@ -91,39 +112,49 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
      * @param file - Optional file to upload.
      * @returns {Promise<void>}
      */
-    const addItem = async (itemData: Omit<CreateItemData, "id" | "addedAt">, file?: File) => {
+    const addItem = async (itemData: Omit<CreateItemData, "id" | "addedAt">, files?: File[]) => {
         try {
-            // Create a FormData object to send multipart/form-data
             const formData = new FormData()
-
-            // Append all item data fields to the FormData.
             formData.append("type", itemData.type)
             formData.append("title", itemData.title)
             formData.append("description", itemData.description)
-            formData.append("theme", itemData.theme)
             formData.append("addedBy", itemData.addedBy)
 
-            // Conditionally append optional fields.
-            if (itemData.url) formData.append("url", itemData.url)
-            if (file) formData.append("file", file)
+            if (Array.isArray(itemData.theme)) {
+                itemData.theme.forEach((t) => formData.append("theme", t))
+            } else {
+                formData.append("theme", itemData.theme)
+            }
 
-            // Send POST request to the API to create a resource.
+            // Se url for array, adiciona cada link separadamente
+            if (itemData.url) {
+                if (Array.isArray(itemData.url)) {
+                    itemData.url.forEach((link) => formData.append("url", link))
+                } else {
+                    formData.append("url", itemData.url)
+                }
+            }
+
+            if (files && files.length > 0) {
+                files.forEach((file) => {
+                    formData.append("files", file)
+                })
+            }
+
             const res = await fetch("/api/items", {
                 method: "POST",
-                body: formData,     // FormData handles setting the Content-Type header.
+                body: formData,
             })
 
             if (!res.ok) throw new Error("Erro ao criar item")
 
-            // Receiive the newly created item (including its generated ID and timestamp).
             const newItem: Item = await res.json()
-
-            // Optimistically update the local state by adding the new item to the beginning of the list.
             setItems((prev) => [newItem, ...prev])
         } catch (err) {
             console.error(err)
         }
     }
+
 
     /**
      * Handles updating an existing item by ID.
@@ -134,17 +165,19 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
      * @param file - Optional new file to attach.
      * @returns {Promise<void>}
      */
-    const updateItem = async (id: string, updatedData: UpdateItemData, file?: File) => {
+    const updateItem = async (id: string, updatedData: UpdateItemData, files?: File[]) => {
         try {
             // Use FormData for potential file transfer or to send JSON-like data with file removal flag.
             const formData = new FormData()
 
             // Iterate through updateData object and append all non-null/non-undefined fields to FormData.
             Object.entries(updatedData).forEach(([key, value]) => {
-                // Exclude 'removeFile' from the general loop as it's handled separately below.
-                if (value !== undefined && value !== null && key !== 'removeFile') {
-                    // Convert value to string for FormData.
-                    formData.append(key, String(value))
+                if (value === undefined || value === null || key === "removeFile") return
+
+                if (Array.isArray(value)) {
+                    value.forEach(v => formData.append(key, v))
+                } else {
+                    formData.append(key, value)
                 }
             })
 
@@ -154,7 +187,11 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
             }
 
             // Append the new file if provided.
-            if (file) formData.append("file", file)
+            if (files && files.length > 0) {
+                files.forEach((file) => {
+                    formData.append("files", file)
+                })
+            }
 
             // Send PUT request to the item-specific API endpoint.
             const res = await fetch(`/api/items/${id}`, {
@@ -201,7 +238,9 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
     // --- Derived State ---
 
     // Calculates a unique, sorted list of all themes present in the 'items' array.
-    const themes = Array.from(new Set(items.map((item) => item.theme))).sort()
+    const themes: string[] = Array.from(
+        new Set(items.flatMap((item) => item.theme))  // <-- flatMap achata o array
+    ).sort()
 
     // Filters the main 'items' array based on the current filtering state (type, theme, search).
     const filteredItems = items.filter((item) => {
@@ -210,7 +249,7 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
         const typeMatch = selectedType === "all" || item.type === selectedType
 
         // 2. Check if the item theme matches the selected filter ("all" matches everything).
-        const themeMatch = selectedTheme === "all" || item.theme === selectedTheme
+        const themeMatch = selectedTheme === "all" || item.theme.includes(selectedTheme)
 
         // 3. Check if the search query is found in the title or description (case-sensitive).
         const searchMatch =
@@ -238,6 +277,11 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
                 searchQuery,
                 setSearchQuery,
                 themes,
+                pagination: {
+                    page,
+                    totalPages,
+                },
+                setPage,
             }}
         >
             {children}

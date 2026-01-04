@@ -20,7 +20,7 @@ const config: runtime.GetPrismaClientConfig = {
   "clientVersion": "7.2.0",
   "engineVersion": "0c8ef2ce45c83248ab3df073180d5eda9e8be7a3",
   "activeProvider": "postgresql",
-  "inlineSchema": "// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\ngenerator client {\n  provider = \"prisma-client\"\n  output   = \"../app/generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n}\n\nmodel Item {\n  id          String   @id @default(cuid())\n  type        String\n  title       String\n  description String\n  theme       String\n  addedBy     String\n  url         String?\n  filePath    String?\n  addedAt     DateTime @default(now())\n}\n",
+  "inlineSchema": "// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\ngenerator client {\n  provider = \"prisma-client\"\n  output   = \"../app/generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n}\n\n// model Item {\n//   id          String   @id @default(cuid())\n//   type        String\n//   title       String\n//   description String\n//   theme       String\n//   addedBy     String\n//   url         String?\n//   filePath    String?\n//   addedAt     DateTime @default(now())\n// }\n\nmodel Item {\n  id          String   @id @default(cuid())\n  type        String\n  title       String\n  description String\n  theme       String[]\n  addedBy     String\n  url         String[]\n  filePath    String[]\n  addedAt     DateTime @default(now())\n}\n",
   "runtimeDataModel": {
     "models": {},
     "enums": {},

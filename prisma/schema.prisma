@@ -10,14 +10,26 @@ datasource db {
   provider = "postgresql"
 }
 
+// model Item {
+//   id          String   @id @default(cuid())
+//   type        String
+//   title       String
+//   description String
+//   theme       String
+//   addedBy     String
+//   url         String?
+//   filePath    String?
+//   addedAt     DateTime @default(now())
+// }
+
 model Item {
   id          String   @id @default(cuid())
   type        String
   title       String
   description String
-  theme       String
+  theme       String[]
   addedBy     String
-  url         String?
-  filePath    String?
+  url         String[]
+  filePath    String[]
   addedAt     DateTime @default(now())
 }

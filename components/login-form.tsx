@@ -1,7 +1,8 @@
+// components/login-form.tsx
+
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,12 +12,19 @@ import { useAuth } from "@/lib/auth-context"
 
 export function LoginForm() {
     const [name, setName] = useState("")
+    const [password, setPassword] = useState("")
+    const [error, setError] = useState("")   // Mensagem de erro
     const { login } = useAuth()
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        if (name.trim()) {
-            login(name.trim())
+        if (name.trim() && password.trim()) {
+            const success = login(name.trim(), password.trim())
+            if (!success) {
+                setError("Nome ou password incorretos")
+            } else {
+                setError("") // limpa erro se login OK
+            }
         }
     }
 
@@ -41,7 +49,27 @@ export function LoginForm() {
                                 className="h-11"
                             />
                         </div>
-                        <Button type="submit" className="w-full h-11 text-base font-medium" disabled={!name.trim()}>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="password">Password</Label>
+                            <Input
+                                id="password"
+                                type="password"
+                                placeholder="A tua password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                className="h-11"
+                            />
+                        </div>
+
+                        {error && <p className="text-red-500 text-sm">{error}</p>}
+
+                        <Button
+                            type="submit"
+                            className="w-full h-11 text-base font-medium"
+                            disabled={!name.trim() || !password.trim()}
+                        >
                             Entrar
                         </Button>
                     </form>
@@ -50,3 +78,4 @@ export function LoginForm() {
         </div>
     )
 }
+
