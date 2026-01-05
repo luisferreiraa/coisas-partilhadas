@@ -1,3 +1,5 @@
+// lib/types.tsx
+
 export type ItemType = "livro" | "filme" | "serie" | "curso" | "app" | "website" | "lista" | "local" | "evento"
 
 export type Item = {
@@ -10,6 +12,10 @@ export type Item = {
     url?: string[]
     filePath?: string[]
     addedAt: string
+}
+
+export type ItemWithFavorite = Item & {
+    isFavorite: boolean
 }
 
 // Adicione este tipo para atualização

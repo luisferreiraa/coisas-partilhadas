@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const newUser = { id: Date.now().toString(), name: matchedUser.name }
         setUser(newUser)
         localStorage.setItem("coisas-partilhadas-user", JSON.stringify(newUser))
-        return true  // login OK
+        return true
     }
 
     const logout = () => {

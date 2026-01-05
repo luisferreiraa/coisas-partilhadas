@@ -12,18 +12,19 @@ import {
     type ReactNode,     // Type for content passed to the component (children).
 } from "react"
 // Import type definitions for the Item entity and data transfer objects (DTOs).
-import { Item, ItemType, UpdateItemData, CreateItemData } from "./types"
+import { Item, ItemType, UpdateItemData, CreateItemData, ItemWithFavorite } from "./types"
+import { useAuth } from "./auth-context"
 
 /**
  * Defines the structure of the data and functions provided by the Items Context.
  * This contract specifies what consumers of the context can access.
  */
 type ItemsContextType = {
-    items: Item[]       // The complete, unfiltered list of all items retrieved from the API.
+    items: ItemWithFavorite[]       // The complete, unfiltered list of all items retrieved from the API.
     addItem: (item: Omit<CreateItemData, "id" | "addedAt">, files?: File[]) => Promise<void>       // Sends a request to the API to create a new item.
     updateItem: (id: string, item: UpdateItemData, files?: File[]) => Promise<void>            // Sends a request to the API to update an existing item.
     deleteItem: (id: string) => Promise<void>       // Sends a request to the API to delete an item.
-    filteredItems: Item[]       // The list of items after applying type, theme, and search filters.
+    filteredItems: ItemWithFavorite[]       // The list of items after applying type, theme, and search filters.
     selectedType: ItemType | "all"      // The currently active filter for item type.
     setSelectedType: (type: ItemType | "all") => void       // Function to set the active type filter.
     selectedTheme: string       //The currently active filter for theme.
@@ -36,6 +37,7 @@ type ItemsContextType = {
         totalPages: number
     }
     setPage: (page: number) => void
+    toggleFavorite: (itemId: string) => Promise<void>
 }
 
 // Create the context object, initialized with 'undefined'.
@@ -52,7 +54,7 @@ const ItemsContext = createContext<ItemsContextType | undefined>(undefined)
  */
 export function ItemsProvider({ children }: { children: ReactNode }) {
     // State holding the core data: the full list of items.
-    const [items, setItems] = useState<Item[]>([])
+    const [items, setItems] = useState<ItemWithFavorite[]>([])
     // State for filtering by item type ("all" initially).
     const [selectedType, setSelectedType] = useState<ItemType | "all">("all")
     // State for filtering by theme ("all" initially).
@@ -62,6 +64,8 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
 
     const [page, setPage] = useState(1)
     const [totalPages, setTotalPages] = useState(1)
+
+    const { user } = useAuth()
 
     // --- Load Items from database (API) ---
 
@@ -88,8 +92,21 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
                     return
                 }
 
-                // Atualiza o estado com os items e o total de páginas
-                setItems(data.items)
+                if (user) {
+                    const favRes = await fetch(`/api/favorites?username=${user.name}`)
+                    if (!favRes.ok) throw new Error("Erro ao carregar favorites")
+
+                    const favoriteIds: string[] = await favRes.json()
+
+                    const itemsWithFavorites = data.items.map((item: Item) => ({
+                        ...item,
+                        isFavorite: favoriteIds.includes(item.id),
+                    }))
+
+                    setItems(itemsWithFavorites)
+                } else {
+                    setItems(data.items)
+                }
                 setTotalPages(data.totalPages ?? 1)
             } catch (err) {
                 console.error("Erro no loadItems:", err)
@@ -99,8 +116,31 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
         }
 
         loadItems()
-    }, [page])
+    }, [page, user])
 
+
+    const toggleFavorite = async (itemId: string) => {
+        if (!user) return
+
+        await fetch("/api/favorites", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                itemId,
+                username: user.name,
+            }),
+        })
+
+        setItems((prev) =>
+            prev.map((item) =>
+                item.id === itemId
+                    ? { ...item, isFavorite: !item.isFavorite }
+                    : item
+            )
+        )
+    }
 
     // --- CRUD Operations ---
 
@@ -149,7 +189,13 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
             if (!res.ok) throw new Error("Erro ao criar item")
 
             const newItem: Item = await res.json()
-            setItems((prev) => [newItem, ...prev])
+            setItems((prev) => [
+                {
+                    ...newItem,
+                    isFavorite: false,
+                },
+                ...prev,
+            ])
         } catch (err) {
             console.error(err)
         }
@@ -206,7 +252,11 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
 
             // Update the local state by replacing the old item object with the new one.
             setItems((prev) =>
-                prev.map((item) => (item.id === id ? updatedItem : item))
+                prev.map((item) =>
+                    item.id === id
+                        ? { ...updatedItem, isFavorite: item.isFavorite }
+                        : item
+                )
             )
         } catch (err) {
             console.error(err)
@@ -282,6 +332,7 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
                     totalPages,
                 },
                 setPage,
+                toggleFavorite,
             }}
         >
             {children}

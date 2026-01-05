@@ -44,3 +44,8 @@ export { Prisma }
  * 
  */
 export type Item = Prisma.ItemModel
+/**
+ * Model Favorite
+ * 
+ */
+export type Favorite = Prisma.FavoriteModel
