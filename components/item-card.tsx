@@ -139,8 +139,8 @@ export function ItemCard({ item }: { item: ItemWithFavorite }) {
             <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                     {/* Badges for Type and Theme */}
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="flex flex-wrap gap-1">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                        <div className="flex flex-wrap gap-1 min-h-8 items-center">
                             <Badge variant="secondary" className="text-xs">
                                 {formatType(item.type)}
                             </Badge>
@@ -161,12 +161,12 @@ export function ItemCard({ item }: { item: ItemWithFavorite }) {
                                     </Badge>
 
                                     <div className="
-            absolute z-20 hidden group-hover:block
-            top-full mt-1 left-0
-            bg-black text-white text-xs
-            px-2 py-1 rounded shadow
-            whitespace-nowrap
-        ">
+    absolute z-20 hidden group-hover:block
+    top-full mt-1 left-0
+    bg-black text-white text-xs
+    px-2 py-1 rounded shadow
+    whitespace-nowrap
+">
                                         {hiddenThemes.join(", ")}
                                     </div>
                                 </div>
@@ -174,7 +174,7 @@ export function ItemCard({ item }: { item: ItemWithFavorite }) {
                         </div>
 
 
-                        <div className="relative">
+                        <div className="relative flex items-center min-h-8">
 
                             {/* Favorite button */}
                             <Button
