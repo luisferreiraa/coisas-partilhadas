@@ -115,6 +115,7 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
             })
             // Reset existing file list.
             setExistingFiles([])
+            setThemeInput("")
         }
 
         // Reset file-related states for new operations.

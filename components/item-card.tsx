@@ -130,6 +130,9 @@ export function ItemCard({ item }: { item: ItemWithFavorite }) {
         setIsShareOpen(false)
     }
 
+    const visibleThemes = item.theme.slice(0, 2)
+    const hiddenThemes = item.theme.slice(2)
+
     return (
         <>
             {/* The main card component with hover shadow effect. */}
@@ -142,11 +145,32 @@ export function ItemCard({ item }: { item: ItemWithFavorite }) {
                                 {formatType(item.type)}
                             </Badge>
 
-                            {item.theme.map((t) => (
+                            {visibleThemes.map((t) => (
                                 <Badge key={t} variant="outline" className="text-xs">
                                     {t}
                                 </Badge>
                             ))}
+
+                            {hiddenThemes.length > 0 && (
+                                <div className="relative group inline-flex items-center">
+                                    <Badge
+                                        variant="outline"
+                                        className="text-xs"
+                                    >
+                                        +{hiddenThemes.length}
+                                    </Badge>
+
+                                    <div className="
+            absolute z-20 hidden group-hover:block
+            top-full mt-1 left-0
+            bg-black text-white text-xs
+            px-2 py-1 rounded shadow
+            whitespace-nowrap
+        ">
+                                        {hiddenThemes.join(", ")}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
 

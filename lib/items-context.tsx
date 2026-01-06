@@ -38,6 +38,8 @@ type ItemsContextType = {
     }
     setPage: (page: number) => void
     toggleFavorite: (itemId: string) => Promise<void>
+    showFavorites: boolean
+    setShowFavorites: React.Dispatch<React.SetStateAction<boolean>>
 }
 
 // Create the context object, initialized with 'undefined'.
@@ -61,6 +63,8 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
     const [selectedTheme, setSelectedTheme] = useState<string>("all")
     // State for text search queries.
     const [searchQuery, setSearchQuery] = useState("")
+
+    const [showFavorites, setShowFavorites] = useState(false)
 
     const [page, setPage] = useState(1)
     const [totalPages, setTotalPages] = useState(1)
@@ -294,21 +298,20 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
 
     // Filters the main 'items' array based on the current filtering state (type, theme, search).
     const filteredItems = items.filter((item) => {
-
-        // 1. Check if the item type matches the selected filter ("all" matches everything).
         const typeMatch = selectedType === "all" || item.type === selectedType
 
-        // 2. Check if the item theme matches the selected filter ("all" matches everything).
-        const themeMatch = selectedTheme === "all" || item.theme.includes(selectedTheme)
+        const themeMatch =
+            selectedTheme === "all" || item.theme.includes(selectedTheme)
 
-        // 3. Check if the search query is found in the title or description (case-sensitive).
         const searchMatch =
-            searchQuery === "" ||       // If query is empty, it always matches.
+            searchQuery === "" ||
             item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             item.description.toLowerCase().includes(searchQuery.toLowerCase())
 
-        // An item is included in the filtered list only if ALL conditions are true.
-        return typeMatch && themeMatch && searchMatch
+        const favoriteMatch =
+            !showFavorites || item.isFavorite === true
+
+        return typeMatch && themeMatch && searchMatch && favoriteMatch
     })
 
     // Render the context provider, passing the state, setters, and derived values.
@@ -333,6 +336,8 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
                 },
                 setPage,
                 toggleFavorite,
+                showFavorites,
+                setShowFavorites
             }}
         >
             {children}
