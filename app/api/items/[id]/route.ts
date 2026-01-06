@@ -9,16 +9,16 @@ import s3 from "@/lib/s3"       // Custom S3 client instance configured for AWS 
 /**
  * @function getS3KeyFromUrl
  * @description Extracts the S3 object key (the path within the bucket) from its public URL.
- * This is necessary before executing S3 operations like deletion.
+ * This key is the unique identifier needed for S3 operations (like deletion).
  * @param {string} url - The full public URL of the S3 object. 
- * @returns {string} The S3 object key.
+ * @returns {string} The S3 object key (e.g., 'uploads/uuid.ext').
  */
 function getS3KeyFromUrl(url: string) {
     const bucket = process.env.AWS_S3_BUCKET!       // Get the bucket name from env variables.
     const region = process.env.AWS_REGION!      // Get the region from en variables.
     // Construct the fixed prefix part of the S3 URL
     const prefix = `https://${bucket}.s3.${region}.amazonaws.com/`
-    // Remove the prefix from the URL to get onnly the object key.
+    // Remove the prefix from the URL to get only the object key.
     return url.replace(prefix, "")
 }
 
@@ -26,9 +26,8 @@ function getS3KeyFromUrl(url: string) {
  * @async
  * @function GET
  * @description Handles HTTP GET requests to retrieve a single item by ID.
- * 
- * @param {_req: NextRequest} _req - The incoming request object.  
- * @param {context: { params: Promise<{ id: string }> }} context - Object containing route parameters. 
+ * * @param {_req: NextRequest} _req - The incoming request object. (Prefixed with '_' to indicate it's unused, as Next.js requires it).
+ * @param {context: { params: Promise<{ id: string }> }} context - Object containing route parameters, specifically the item ID. 
  * @returns {Promise<NextResponse>} JSON response containing the item or an error message.
  */
 export async function GET(
@@ -63,9 +62,9 @@ export async function GET(
 /**
  * @async
  * @function PUT
- * @description Handles HTTP PUT requests to update an existing item by ID, including file handling (upload/replacement/removal).
- * 
- * @param {req: NextRequest} req - The incoming request object containing FormData.
+ * @description Handles HTTP PUT requests to update an existing item by ID. This function supports
+ * updating metadata fields, as well as managing associated files: removing existing files and uploading new ones.
+ * * @param {req: NextRequest} req - The incoming request object containing FormData (for mixed data/file input).
  * @param {context: { params: Promise<{ id: string }> }} context - Object containing route parameters.
  * @returns {Promise<NextResponse>} JSON response containing the updated item or an error message.
  */
@@ -89,50 +88,36 @@ export async function PUT(
         const type = formData.get("type") as string
         const title = formData.get("title") as string
         const description = formData.get("description") as string
-        // const theme = formData.get("theme") as string
 
+        // Extracts all values for the "theme" key (supports multi-select inputs).
         const themes = formData.getAll("theme") as string[]
 
         const addedBy = formData.get("addedBy") as string
-        // const url = formData.get("url") as string | null
 
+        // Extracts all values for the "url" key.
         const urls = formData.getAll("url") as string[]
 
-        // const file = formData.get("file") as File | null        // The uploaded file object (if present).
-
+        // Extracts all new file objects for upload.
         const files = formData.getAll("files") as File[]
 
-        // const removeFiles = formData.get("removeFile") as string | null      // Flag to explicitly remove existing file.
-
+        // Extracts a list of S3 URLs that the client explicitly wants to remove.
         const filesToRemove = formData.getAll("filesToRemove") as string[]
 
-        // Initialize the final path to the current existing file path. This will be updated if a new file is uploaded or removed.
+        // Initialize the final list of file paths with the current existing paths.
+        // This array will be modified by removal and addition steps.
         let filePaths: string[] = currentItem.filePath || []
 
-        // 3. Remove existing file
-        // Check if the explicit removal flag is set AND if a file actually exists for the current item.
-        // if (removeFiles === "true" && filePaths.length > 0) {
-
-        //     for (const url of filePaths) {
-        //         const key = getS3KeyFromUrl(url)
-        //         await s3.send(new DeleteObjectCommand({
-        //             Bucket: process.env.AWS_S3_BUCKET!,
-        //             Key: key,
-        //         }))
-        //     }
-
-        //     // Set the item's file path to null in preparation for database update.
-        //     filePaths = []
-        // }
-
+        // 3. Delete existing files
         if (filesToRemove.length > 0) {
+            // Loop through each URL marked for deletion.
             for (const url of filesToRemove) {
                 const key = getS3KeyFromUrl(url)
+                // Execute S3 deletion command.
                 await s3.send(new DeleteObjectCommand({
                     Bucket: process.env.AWS_S3_BUCKET!,
                     Key: key,
                 }))
-                // remove do array final
+                // Filter the deleted URL out of the final list of file paths.
                 filePaths = filePaths.filter(f => f !== url)
             }
         }
@@ -140,13 +125,17 @@ export async function PUT(
         // 4. Replace / add new file
         // Check if a new file object was provided and is not empty.
         for (const file of files) {
+            // Skip if the item in the array is null or the file is empty.
             if (!file || file.size === 0) continue
 
+            // Convert file content to Buffer.
             const bytes = await file.arrayBuffer()
             const buffer = Buffer.from(bytes)
+            // Determine file extension and create a unique S3 key.
             const extension = file.name.split(".").pop()
             const key = `uploads/${uuidv4()}.${extension}`
 
+            // Upload the new file to S3.
             await s3.send(new PutObjectCommand({
                 Bucket: process.env.AWS_S3_BUCKET!,
                 Key: key,
@@ -154,6 +143,7 @@ export async function PUT(
                 ContentType: file.type,
             }))
 
+            // Add the public URL of the newly uploaded file to the list of paths.
             filePaths.push(`https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`)
         }
 
@@ -166,9 +156,10 @@ export async function PUT(
                 type: type || currentItem.type,
                 title: title || currentItem.title,
                 description: description || currentItem.description,
+                // If themes array has content, use it; otherwise, retain the current value.
                 theme: themes.length > 0 ? themes : currentItem.theme,
                 addedBy: addedBy || currentItem.addedBy,
-                // Special handling for URL: if explicitly passed as null (empty string), update it, otherwise retain the current value.
+                // If urls array has content (meaning the user explicitly provided or cleared them), use it; otherwise, retain the current value.
                 url: urls.length > 0 ? urls : currentItem.url,
                 // Use the updated filePath determined by steps 3 and 4 (or the original if no changes).
                 filePath: filePaths,
@@ -212,8 +203,10 @@ export async function DELETE(
         // Delete file in S3
         // Check if an associated file exists.
         if (item.filePath && item.filePath.length > 0) {
+            // Loop through each file URL associated with the item.
             for (const url of item.filePath) {
                 const key = getS3KeyFromUrl(url)
+                // Send the S3 deletion command for the specific file key.
                 await s3.send(new DeleteObjectCommand({
                     Bucket: process.env.AWS_S3_BUCKET!,
                     Key: key,

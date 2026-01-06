@@ -2,49 +2,56 @@
 
 import { NextResponse } from "next/server"      // Next.js utility for handling API responses.
 import { v4 as uuidv4 } from "uuid"     // Library for generating universally unique identifiers (UUIDSs) for file naming.
-import prisma from "@/lib/prisma"       // Imports the configured PRisma client instance.
-import { PutObjectCommand } from "@aws-sdk/client-s3"
-import s3 from "@/lib/s3"
+import prisma from "@/lib/prisma"       // Imports the configured Prisma client instance.
+import { PutObjectCommand } from "@aws-sdk/client-s3"       // Command object for uploading files to S3.
+import s3 from "@/lib/s3"       // Imports the configured S3 client instance.
 
 /**
  * @async
  * @function GET
- * @description - Handles HTTP GET requests to retrieve all items from database.
- * @returns {Promise<NextResponse>} JSON response containing the list of items or an error message.
+ * @description - Handles HTTP GET requests to retrieve a paginated list of all items from the database.
+ * The endpoint supports query parameters for page number.
+ * @param {Request} req - The incoming Next.js Request object.
+ * @returns {Promise<NextResponse>} JSON response containing the list of items, pagination details, or an error message.
  */
 export async function GET(req: Request) {
     try {
+        // Extract search parameters from the request URL.
         const { searchParams } = new URL(req.url)
 
+        // Determine the current page number, defaulting to 1 and ensuring it's a positive integer.
         const page = Math.max(
             1,
             Number(searchParams.get("page") ?? "1")
         )
 
-        const pageSize = 10
-        const skip = (page - 1) * pageSize
+        const pageSize = 10     // Define the fixed number of items per page.
+        const skip = (page - 1) * pageSize      // Calculate the offset for pagination (how many records to skip).
 
-        // Buscar items paginados
+        // Fetch items from the database using Prisma, applying ordering, skipping, and limiting (taking).
         const items = await prisma.item.findMany({
-            orderBy: { addedAt: "desc" },
-            skip,
-            take: pageSize,
+            orderBy: { addedAt: "desc" },       // Order results by creation date, newest first.
+            skip,       // Apply the offset.
+            take: pageSize,     // Limit the number of results to the page size.
         })
 
-        // Total de items (para saber quantas páginas existem)
+        // Count the total number of records in the 'item' table (for calculating total pages).
         const totalItems = await prisma.item.count()
 
+        // Return a successful JSON response with the fetched items and pagination metadata.
         return NextResponse.json({
             items,
             pagination: {
                 page,
                 pageSize,
                 totalItems,
-                totalPages: Math.ceil(totalItems / pageSize),
+                totalPages: Math.ceil(totalItems / pageSize),       // Calculate the total number of pages.
             },
         })
     } catch (error) {
+        // Log the error for server-side debugging.
         console.error("Error fetching items:", error)
+        // Return a 500 Internal Server Error response to the client.
         return NextResponse.json(
             { error: "Failed to fetch items" },
             { status: 500 }
@@ -54,8 +61,10 @@ export async function GET(req: Request) {
 
 /**
  * @async
- * @description - Handles HTTP POST requests to create a new item, including file uploads.
- * @param {Request} req - The incoming Next.js request object, which contains FormData. 
+ * @function POST
+ * @description - Handles HTTP POST requests to create a new item. It processes form data,
+ * handles file uploads to S3, and saves the item record (including S3 file paths) to the database.
+ * @param {Request} req - The incoming Next.js request object, expected to contain FormData. 
  * @returns {Promise<NextResponse>} JSON response containing the newly created item or an error message.
  */
 export async function POST(req: Request) {
@@ -63,88 +72,63 @@ export async function POST(req: Request) {
         // Parse the incoming request body as FormData, which is necessary for handling file uploads.
         const formData = await req.formData()
 
-        // Extract required string fields from the FormData.
-        // Type casting is used as values are unknown by default.
+        // Extract required string fields from the FormData and cast them.
         const type = formData.get("type") as string
         const title = formData.get("title") as string
         const description = formData.get("description") as string
 
-        // const theme = formData.get("theme") as string
-
+        // Handle 'theme': Extracts all values for the "theme" key (which might be an array if sent multiple times).
         let themeRaw = formData.getAll("theme") as string[]
+        // Check if a single string containing comma-separated values was sent, and split it.
         if (themeRaw.length === 1 && themeRaw[0].includes(",")) {
             themeRaw = themeRaw[0].split(",").map((t) => t.trim())
         }
 
+        // Final theme array (even if it contains a single element).
         const theme = themeRaw
 
-        const addedBy = formData.get("addedBy") as string
+        const addedBy = formData.get("addedBy") as string       // User who created the item.
 
-        // Extract optional fields.
-        // 'url' is string or null, 'file' is a File object or null.
-        // const url = formData.get("url") as string | null
-        // const file = formData.get("file") as File | null
-
+        // Handle 'url': Extracts all values for the "url" key.
         let urlRaw = formData.getAll("url") as string[]
+        // Check if a single string containing comma-separated URLs was sent, and split it.
         if (urlRaw.length === 1 && urlRaw[0].includes(",")) {
             urlRaw = urlRaw[0].split(",").map((u) => u.trim())
         }
+        // Final URL array.
         const url = urlRaw.length > 0 ? urlRaw : []
 
-        // Initialize filePath variable, which will store the public URL of the uploaded file, or null if no file is uploaded.
-        // let filePath: string | null = null
-
+        // Extract all files provided under the "files" key.
         const files = formData.getAll("files") as File[]
-        const filePaths: string[] = []
+        const filePaths: string[] = []      // Array to store the resulting S3 URLs for the files.
 
+        // Loop through each file object received.
         for (const file of files) {
             if (file && file.size > 0) {
+                // Convert the file content to an ArrayBuffer, then to a Node.js Buffer for S3 upload.
                 const bytes = await file.arrayBuffer()
                 const buffer = Buffer.from(bytes)
+                // Extract the file extension (e.g., "pdf", "jpg").
                 const fileExtension = file.name.split(".").pop()
+                // Create a unique key for S3: 'uploads/' + UUID + extension.
                 const key = `uploads/${uuidv4()}.${fileExtension}`
 
+                // Execute the S3 upload command.
                 await s3.send(
                     new PutObjectCommand({
-                        Bucket: process.env.AWS_S3_BUCKET!,
-                        Key: key,
-                        Body: buffer,
-                        ContentType: file.type,
+                        Bucket: process.env.AWS_S3_BUCKET!,     // Bucket name from environment variables.
+                        Key: key,       // The unique file path in the bucket.
+                        Body: buffer,       // The file content.
+                        ContentType: file.type,     // The MIME type (e.g., 'application/pdf').
                     })
                 )
 
+                // Construct the public access URL for the file and store it.
                 filePaths.push(
                     `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`
                 )
             }
         }
-
-        // Check if a file object exists and has a size greater than 0 bytes.
-        // if (file && file.size > 0) {
-        //     // Convert the file object's data into an ArrayBuffer asynchronously.
-        //     const bytes = await file.arrayBuffer()
-        //     // Convert the ArrayBuffer into a Node.js Buffer object, required by the AWS SDK for efficient transfer.
-        //     const buffer = Buffer.from(bytes)
-
-        //     // Extract the file extension from the original file name.
-        //     const fileExtension = file.name.split(".").pop()
-        //     // Construct the unique storage key (path) for the file in the S3 bucket.
-        //     // It uses a UUID to prevent naming conflicts, appended with the original file extensions.
-        //     const key = `uploads/${uuidv4()}.${fileExtension}`
-
-        //     // Send the command to the S3 service to upload the object.
-        //     await s3.send(
-        //         new PutObjectCommand({
-        //             Bucket: process.env.AWS_S3_BUCKET!,     // Mandatory: The name of the S3 bucket('!' assertts non nullity).
-        //             Key: key,       // Mandatory: The unique path/name of the object in the bucket.
-        //             Body: buffer,       // Mandatory: The content of the file (the Buffer).
-        //             ContentType: file.type,     // Recommended: The MIME type of the file.
-        //         })
-        //     )
-
-        //     // Constructs the public URL for the newly uploaded file based on AWS convention.
-        //     // This URL allows direct access to the file using the bucket name, region, and key.
-        //     filePath = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`
 
         // Create the new item record in the database using Prisma.
         const item = await prisma.item.create({
@@ -152,10 +136,10 @@ export async function POST(req: Request) {
                 type,
                 title,
                 description,
-                theme,
+                theme,      // Stored as a string array.
                 addedBy,
-                url,
-                filePath: filePaths,
+                url,        // Stored as a string array.
+                filePath: filePaths,        // Stored as a string array containing S3 URLs.
             },
         })
 
