@@ -158,12 +158,20 @@ export async function PUT(
                 description: description || currentItem.description,
                 // If themes array has content, use it; otherwise, retain the current value.
                 theme: themes.length > 0 ? themes : currentItem.theme,
-                addedBy: addedBy || currentItem.addedBy,
+                addedById: addedBy || currentItem.addedById,
                 // If urls array has content (meaning the user explicitly provided or cleared them), use it; otherwise, retain the current value.
                 url: urls.length > 0 ? urls : currentItem.url,
                 // Use the updated filePath determined by steps 3 and 4 (or the original if no changes).
                 filePath: filePaths,
             },
+            include: {
+                addedBy: {
+                    select: {
+                        id: true,
+                        username: true,
+                    }
+                }
+            }
         })
 
         // Return the successfully updated item.

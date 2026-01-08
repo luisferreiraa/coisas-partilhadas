@@ -70,7 +70,7 @@ export function Dashboard() {
                         <div>
                             <h1 className="text-2xl font-bold">Coisas Partilhadas</h1>
                             <p className="text-sm text-muted-foreground">
-                                Olá, {user?.name}
+                                Olá, {user?.username}
                             </p>
                         </div>
                         {/* Action buttons (Add Item and Logout) */}

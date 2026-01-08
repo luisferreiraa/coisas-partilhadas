@@ -8,6 +8,7 @@
  *
  * 🟢 You can import this file directly.
  */
+export type * from './models/User'
 export type * from './models/Item'
 export type * from './models/Favorite'
 export type * from './commonInputTypes'

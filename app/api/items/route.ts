@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from "uuid"     // Library for generating universally un
 import prisma from "@/lib/prisma"       // Imports the configured Prisma client instance.
 import { PutObjectCommand } from "@aws-sdk/client-s3"       // Command object for uploading files to S3.
 import s3 from "@/lib/s3"       // Imports the configured S3 client instance.
+import { getUserFromRequest } from "@/lib/auth-server"
 
 /**
  * @async
@@ -16,6 +17,8 @@ import s3 from "@/lib/s3"       // Imports the configured S3 client instance.
  */
 export async function GET(req: Request) {
     try {
+        const user = getUserFromRequest()
+
         // Extract search parameters from the request URL.
         const { searchParams } = new URL(req.url)
 
@@ -33,6 +36,14 @@ export async function GET(req: Request) {
             orderBy: { addedAt: "desc" },       // Order results by creation date, newest first.
             skip,       // Apply the offset.
             take: pageSize,     // Limit the number of results to the page size.
+            include: {
+                addedBy: {
+                    select: {
+                        id: true,
+                        username: true,
+                    }
+                }
+            }
         })
 
         // Count the total number of records in the 'item' table (for calculating total pages).
@@ -69,6 +80,8 @@ export async function GET(req: Request) {
  */
 export async function POST(req: Request) {
     try {
+        const user = await getUserFromRequest()
+
         // Parse the incoming request body as FormData, which is necessary for handling file uploads.
         const formData = await req.formData()
 
@@ -87,7 +100,7 @@ export async function POST(req: Request) {
         // Final theme array (even if it contains a single element).
         const theme = themeRaw
 
-        const addedBy = formData.get("addedBy") as string       // User who created the item.
+        // const addedBy = formData.get("addedBy") as string       // User who created the item.
 
         // Handle 'url': Extracts all values for the "url" key.
         let urlRaw = formData.getAll("url") as string[]
@@ -137,10 +150,18 @@ export async function POST(req: Request) {
                 title,
                 description,
                 theme,      // Stored as a string array.
-                addedBy,
+                addedById: user.sub,
                 url,        // Stored as a string array.
                 filePath: filePaths,        // Stored as a string array containing S3 URLs.
             },
+            include: {
+                addedBy: {
+                    select: {
+                        id: true,
+                        username: true,
+                    }
+                }
+            }
         })
 
         // Return a successful 200 OK response with the newly created item.

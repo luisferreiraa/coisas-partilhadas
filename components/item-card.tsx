@@ -266,7 +266,7 @@ export function ItemCard({ item }: { item: ItemWithFavorite }) {
                 <CardContent className="space-y-3">
                     {/* Metadata: Display of the user who added the item and the formatted date. */}
                     <div className="text-xs text-muted-foreground">
-                        Adicionado por {item.addedBy} • {date}
+                        Adicionado por {item.addedBy?.username} • {date}
                     </div>
 
                     {/* Section containing all interaction buttons. */}

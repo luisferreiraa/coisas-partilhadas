@@ -8,7 +8,11 @@ export type Item = {
     title: string
     description: string
     theme: string[]
-    addedBy: string
+    addedById: string
+    addedBy?: {
+        id: string
+        username: string
+    }
     url?: string[]
     filePath?: string[]
     addedAt: string

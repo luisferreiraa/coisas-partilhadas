@@ -70,7 +70,7 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
     // State for the total number of pages available (set after API response).
     const [totalPages, setTotalPages] = useState(1)
     // Access the current authenticated user details.
-    const { user } = useAuth()
+    const { user, isAuthenticated } = useAuth()
 
     // --- Data Loading and Synchronization ---
 
@@ -79,13 +79,22 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
      * This effect handles the primary data loading for the application.
      */
     useEffect(() => {
+
+        if (!user || !isAuthenticated) {
+            setItems([])
+            setTotalPages(1)
+            return
+        }
+
         const loadItems = async () => {
 
             const ITEMS_PER_PAGE = 9        // Define the size of the pagination windown.
 
             try {
                 // 1. Fetch the paginated list of items from the API.
-                const res = await fetch(`/api/items?page=${page}&pageSize=${ITEMS_PER_PAGE}`)
+                const res = await fetch(`/api/items?page=${page}&pageSize=${ITEMS_PER_PAGE}`, {
+                    credentials: "include"
+                })
 
                 if (!res.ok) throw new Error("Erro ao carregar items")      // Handle non-2xx status codes.
 
@@ -100,9 +109,12 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
                 }
 
                 // 2. If a user is authenticated, fetch their favorites to enrich the item data.
-                if (user) {
+                if (user && isAuthenticated) {
                     // Fetch the list of favorited item IDs for the current user.
-                    const favRes = await fetch(`/api/favorites?username=${user.name}`)
+                    const favRes = await fetch(`/api/favorites`, {
+                        credentials: "include"
+                    })
+
                     if (!favRes.ok) throw new Error("Erro ao carregar favorites")
 
                     const favoriteIds: string[] = await favRes.json()
@@ -128,7 +140,7 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
         }
 
         loadItems()
-    }, [page, user])        // Re-run effect when current page or authenticated user changes.
+    }, [page, user, isAuthenticated])        // Re-run effect when current page or authenticated user changes.
 
 
     /**
@@ -139,17 +151,12 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
      * @returns {Promise<void>}
      */
     const toggleFavorite = async (itemId: string) => {
-        if (!user) return       // Cannot toggle favorite if no user is logged in.
+        if (!user || !isAuthenticated) return       // Cannot toggle favorite if no user is logged in.
 
         await fetch("/api/favorites", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                itemId,
-                username: user.name,        // Use the authenticated user's name for the favorite rercord.
-            }),
+            credentials: "include",
+            body: JSON.stringify({ itemId }),
         })
 
         // Optimistically update the local state: invert the 'isFavorite' status for the toggled item.
@@ -174,6 +181,12 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
      * @returns {Promise<void>}
      */
     const addItem = async (itemData: Omit<CreateItemData, "id" | "addedAt">, files?: File[]) => {
+
+        if (!isAuthenticated) {
+            console.error("Não autenticado")
+            return
+        }
+
         try {
             // Initialize FormData to send a multipart/form-data request, necessary for files.
             const formData = new FormData()
@@ -182,7 +195,7 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
             formData.append("type", itemData.type)
             formData.append("title", itemData.title)
             formData.append("description", itemData.description)
-            formData.append("addedBy", itemData.addedBy)
+            // formData.append("addedBy", itemData.addedBy)
 
             // Append "theme" field(s). Handles both single string and array of themes.
             if (Array.isArray(itemData.theme)) {
@@ -210,6 +223,7 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
             // Send a POST request to the API to create the item.
             const res = await fetch("/api/items", {
                 method: "POST",
+                credentials: "include",
                 body: formData,     // FormData handles the content type headers automatically.
             })
 
@@ -242,22 +256,29 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
      * @returns {Promise<void>}
      */
     const updateItem = async (id: string, updatedData: UpdateItemData, files?: File[]) => {
+
+        if (!isAuthenticated) {
+            console.error("Não autenticado")
+            return
+        }
+
         try {
             // Initialize FormData for multipart data transfer.
             const formData = new FormData()
 
-            // Iterate through updateData object and append all fields to FormData.
             Object.entries(updatedData).forEach(([key, value]) => {
-                // Skip null/undefined values and the 'removeFile' flag here to avoid sending 'null' strings.
                 if (value === undefined || value === null || key === "removeFile") return
 
-                // Handle array fields (like themes for URLs) by appending each item separately.
                 if (Array.isArray(value)) {
                     value.forEach(v => formData.append(key, v))
+                } else if (typeof value === "object" && "id" in value) {
+                    formData.append(key, value.id)
                 } else {
-                    formData.append(key, value)
+                    // Aqui adicionamos strings, números, booleans
+                    formData.append(key, value.toString())
                 }
             })
+
 
             // Explicitly handle the boolean flag for removing the existing file.
             if (updatedData.removeFile) {
@@ -274,6 +295,7 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
             // Send PUT request to the item-specific API endpoint with the item ID.
             const res = await fetch(`/api/items/${id}`, {
                 method: "PUT",
+                credentials: "include",
                 body: formData,
             })
 
@@ -303,10 +325,17 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
      * @return {Promise<void>} 
      */
     const deleteItem = async (id: string) => {
+
+        if (!isAuthenticated) {
+            console.error("Não autenticado")
+            return
+        }
+
         try {
             // Send DELETE request to the item-specific API endpoint.
             const res = await fetch(`/api/items/${id}`, {
                 method: "DELETE",
+                credentials: "include",
             })
 
             if (!res.ok) throw new Error("Erro ao apagar item")

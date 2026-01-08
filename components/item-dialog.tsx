@@ -188,7 +188,7 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
             title: formData.title,
             description: formData.description,
             theme: themesArray,     // Use processed themes array.
-            addedBy: user.name,
+            addedById: user.id,
             // Use cleaned URLs array, or undefined if the array is empty.
             url: cleanedUrls.length > 0 ? cleanedUrls : undefined,
         }

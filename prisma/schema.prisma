@@ -10,22 +10,40 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+
+  items     Item[]     @relation("UserItems")
+  favorites Favorite[]
+}
+
 model Item {
   id          String   @id @default(cuid())
   type        String
   title       String
   description String
   theme       String[]
-  addedBy     String
   url         String[]
   filePath    String[]
   addedAt     DateTime @default(now())
+
+  addedById String
+  addedBy   User   @relation("UserItems", fields: [addedById], references: [id])
+
+  favorites Favorite[]
 }
 
 model Favorite {
-  id       String @id @default(cuid())
-  username String
-  itemId   String
+  id String @id @default(cuid())
 
-  @@unique([username, itemId])
+  userId String
+  itemId String
+
+  user User @relation(fields: [userId], references: [id])
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemId])
 }
