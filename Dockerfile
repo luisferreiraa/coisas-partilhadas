@@ -39,5 +39,5 @@ ENV PORT=3006
 
 # Mantenha o CMD original. A variável DATABASE_URL deve ser resolvida
 # corretamente agora que o prisma.config.ts está presente.
-#CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed && node server.js"]
-CMD ["sh", "-c", "npx prisma migrate reset --force && npx prisma db seed && node server.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed && node server.js"]
+#CMD ["sh", "-c", "npx prisma migrate reset --force && npx prisma db seed && node server.js"]
