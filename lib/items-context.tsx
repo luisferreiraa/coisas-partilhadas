@@ -496,7 +496,7 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
 
         const loadItems = async () => {
             setIsLoading(true)
-            const ITEMS_PER_PAGE = 10
+            const ITEMS_PER_PAGE = 9
 
             try {
                 // Build query parameters

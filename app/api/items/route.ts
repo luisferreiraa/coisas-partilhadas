@@ -82,7 +82,7 @@ export async function GET(req: Request) {
 
         // Pagination parameters
         const page = Math.max(1, Number(searchParams.get("page") ?? "1"))
-        const pageSize = Math.max(1, Number(searchParams.get("pageSize") ?? "10"))
+        const pageSize = Math.max(1, Number(searchParams.get("pageSize") ?? "9"))
         const skip = (page - 1) * pageSize
 
         // Filter parameters
