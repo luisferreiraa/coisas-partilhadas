@@ -70,24 +70,48 @@ While the implementation is generally solid, especially regarding the use of bcr
 
 ---
 
-JWT Secret Management
+**Area**: JWT Secret Management
 
-Uses process.env.JWT_SECRET!.
+**Current State**: Uses process.env.JWT_SECRET!.
 
-Ensure the secret is very long, random, and stored securely (e.g., in a dedicated secret manager). A weak or predictable secret makes the tokens easy to forge.
-
----
-
-Rate Limiting
-
-None apparent in the code.
-
-Implement IP-based rate limiting on the login route. This prevents brute-force password guessing attacks. A failure response should include a Retry-After header if the limit is exceeded.
+**Recommendations**: Ensure the secret is very long, random, and stored securely (e.g., in a dedicated secret manager). A weak or predictable secret makes the tokens easy to forge.
 
 ---
 
-Password Hashing
+**Area**: Rate Limiting
 
-Assumes passwords were hashed successfully upon user creation.
+**Current State**: None apparent in the code.
 
-The password hashing function should always use a high cost factor (e.g., bcrypt rounds 12 or more) to increase the time needed for verification, further hindering brute-force attacks.
+**Recommendations**: Implement IP-based rate limiting on the login route. This prevents brute-force password guessing attacks. A failure response should include a Retry-After header if the limit is exceeded.
+
+---
+
+**Area**: Password Hashing
+
+**Current State**: Assumes passwords were hashed successfully upon user creation.
+
+**Recommendations**: The password hashing function should always use a high cost factor (e.g., bcrypt rounds 12 or more) to increase the time needed for verification, further hindering brute-force attacks.
+
+### B. Code and Best Practice Improvements
+
+**Area**: Error Localization
+
+**Current State**: Error messages are in Portuguese ("Credenciais inválidas", "Erro no login").
+
+**Recommendation**: For a robust API, error messages should be returned in a consistent, language-agnostic format (e.g., an error code or an English message like "Invalid credentials") to allow the client application to handle internationalization.
+
+---
+
+**Area**: Token Name
+
+**Current State**: Uses "cp:token".
+
+**Recommendation**: It's a minor detail, but conventionally, session cookies often use prefixes like __Host- or __Secure- to enforce additional security constraints (e.g., always sent from the origin, always secure).
+
+---
+
+**Area**: Cookie Setting
+
+**Current State**: Uses an object with maxAge.
+
+**Recommendation**: For sessions, it's often simpler and cleaner to use the expires property (a Date object) derived from the JWT expiration time, rather than duplicating the time calculation in maxAge.

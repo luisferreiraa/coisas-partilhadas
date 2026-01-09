@@ -28,7 +28,11 @@ export async function GET(req: Request) {
             Number(searchParams.get("page") ?? "1")
         )
 
-        const pageSize = 10     // Define the fixed number of items per page.
+        const pageSize = Math.max(
+            1,
+            Number(searchParams.get("pageSize") ?? "10")
+        )
+
         const skip = (page - 1) * pageSize      // Calculate the offset for pagination (how many records to skip).
 
         // Fetch items from the database using Prisma, applying ordering, skipping, and limiting (taking).
