@@ -15,31 +15,127 @@ import { getUserFromRequest } from "@/lib/auth-server"
  * @param {Request} req - The incoming Next.js Request object.
  * @returns {Promise<NextResponse>} JSON response containing the list of items, pagination details, or an error message.
  */
+// export async function GET(req: Request) {
+//     try {
+//         const user = getUserFromRequest()
+
+//         // Extract search parameters from the request URL.
+//         const { searchParams } = new URL(req.url)
+
+//         // Determine the current page number, defaulting to 1 and ensuring it's a positive integer.
+//         const page = Math.max(
+//             1,
+//             Number(searchParams.get("page") ?? "1")
+//         )
+
+//         const pageSize = Math.max(
+//             1,
+//             Number(searchParams.get("pageSize") ?? "10")
+//         )
+
+//         const skip = (page - 1) * pageSize      // Calculate the offset for pagination (how many records to skip).
+
+//         // Fetch items from the database using Prisma, applying ordering, skipping, and limiting (taking).
+//         const items = await prisma.item.findMany({
+//             orderBy: { addedAt: "desc" },       // Order results by creation date, newest first.
+//             skip,       // Apply the offset.
+//             take: pageSize,     // Limit the number of results to the page size.
+//             include: {
+//                 addedBy: {
+//                     select: {
+//                         id: true,
+//                         username: true,
+//                     }
+//                 }
+//             }
+//         })
+
+//         // Count the total number of records in the 'item' table (for calculating total pages).
+//         const totalItems = await prisma.item.count()
+
+//         // Return a successful JSON response with the fetched items and pagination metadata.
+//         return NextResponse.json({
+//             items,
+//             pagination: {
+//                 page,
+//                 pageSize,
+//                 totalItems,
+//                 totalPages: Math.ceil(totalItems / pageSize),       // Calculate the total number of pages.
+//             },
+//         })
+//     } catch (error) {
+//         // Log the error for server-side debugging.
+//         console.error("Error fetching items:", error)
+//         // Return a 500 Internal Server Error response to the client.
+//         return NextResponse.json(
+//             { error: "Failed to fetch items" },
+//             { status: 500 }
+//         )
+//     }
+// }
+
 export async function GET(req: Request) {
     try {
-        const user = getUserFromRequest()
+        const user = await getUserFromRequest()
 
-        // Extract search parameters from the request URL.
         const { searchParams } = new URL(req.url)
 
-        // Determine the current page number, defaulting to 1 and ensuring it's a positive integer.
-        const page = Math.max(
-            1,
-            Number(searchParams.get("page") ?? "1")
-        )
+        // Pagination parameters
+        const page = Math.max(1, Number(searchParams.get("page") ?? "1"))
+        const pageSize = Math.max(1, Number(searchParams.get("pageSize") ?? "10"))
+        const skip = (page - 1) * pageSize
 
-        const pageSize = Math.max(
-            1,
-            Number(searchParams.get("pageSize") ?? "10")
-        )
+        // Filter parameters
+        const type = searchParams.get("type") // "all" or specific type
+        const theme = searchParams.get("theme") // "all" or specific theme
+        const search = searchParams.get("search") // search query
+        const showFavorites = searchParams.get("showFavorites") === "true"
 
-        const skip = (page - 1) * pageSize      // Calculate the offset for pagination (how many records to skip).
+        // Build Prisma where clause
+        const where: any = {}
 
-        // Fetch items from the database using Prisma, applying ordering, skipping, and limiting (taking).
+        // Type filter
+        if (type && type !== "all") {
+            where.type = type
+        }
+
+        // Theme filter
+        if (theme && theme !== "all") {
+            where.theme = {
+                has: theme // Prisma syntax for array contains
+            }
+        }
+
+        // Search filter (title OR description)
+        if (search && search.trim() !== "") {
+            where.OR = [
+                { title: { contains: search, mode: "insensitive" } },
+                { description: { contains: search, mode: "insensitive" } }
+            ]
+        }
+
+        // Favorites filter
+        if (showFavorites && user) {
+            // First get user's favorite item IDs
+            const favorites = await prisma.favorite.findMany({
+                where: { userId: user.sub },
+                select: { itemId: true }
+            })
+
+            const favoriteItemIds = favorites.map(f => f.itemId)
+
+            // Filter items by favorite IDs
+            where.id = {
+                in: favoriteItemIds
+            }
+        }
+
+        // Fetch filtered and paginated items
         const items = await prisma.item.findMany({
-            orderBy: { addedAt: "desc" },       // Order results by creation date, newest first.
-            skip,       // Apply the offset.
-            take: pageSize,     // Limit the number of results to the page size.
+            where,
+            orderBy: { addedAt: "desc" },
+            skip,
+            take: pageSize,
             include: {
                 addedBy: {
                     select: {
@@ -50,23 +146,39 @@ export async function GET(req: Request) {
             }
         })
 
-        // Count the total number of records in the 'item' table (for calculating total pages).
-        const totalItems = await prisma.item.count()
+        // Count total items matching the filters
+        const totalItems = await prisma.item.count({ where })
 
-        // Return a successful JSON response with the fetched items and pagination metadata.
+        // Get favorite status for current user
+        let itemsWithFavorites = items
+        if (user) {
+            const favoriteItems = await prisma.favorite.findMany({
+                where: {
+                    userId: user.sub,
+                    itemId: { in: items.map(item => item.id) }
+                },
+                select: { itemId: true }
+            })
+
+            const favoriteIds = new Set(favoriteItems.map(f => f.itemId))
+
+            itemsWithFavorites = items.map(item => ({
+                ...item,
+                isFavorite: favoriteIds.has(item.id)
+            }))
+        }
+
         return NextResponse.json({
-            items,
+            items: itemsWithFavorites,
             pagination: {
                 page,
                 pageSize,
                 totalItems,
-                totalPages: Math.ceil(totalItems / pageSize),       // Calculate the total number of pages.
+                totalPages: Math.ceil(totalItems / pageSize),
             },
         })
     } catch (error) {
-        // Log the error for server-side debugging.
         console.error("Error fetching items:", error)
-        // Return a 500 Internal Server Error response to the client.
         return NextResponse.json(
             { error: "Failed to fetch items" },
             { status: 500 }
