@@ -1,150 +1,3 @@
-// // lib/auth-context.tsx
-
-// "use client"
-
-// import {
-//     createContext,      // Core React function to create a Context object.
-//     useContext,         // Hook to consume the context value in descendant components.
-//     useEffect,          // Hook for performing side effects.
-//     useState,           // Hook for managing local component state.
-//     type ReactNode,     // Type definition for React children.
-// } from "react"
-
-// /**
-//  * @typedef {Object} User
-//  * @description Defines the structure for the authenticated user object.
-//  * This data is typically stored in state and persisted in local Storage.
-//  * @property {string} id - The unique identifier for the user (sub claim from JWT).
-//  * @property {string} username - The user's unique username.
-//  */
-// export type User = {
-//     id: string
-//     username: string
-// }
-
-// /**
-//  * @typedef {Object} AuthContextType
-//  * @description Defines the shape of the data methods provided by the AuthContext,
-//  * @property {User | null} user - The current authenticated user object, or null if not logged in.
-//  * @property {string | null} token - The JWT token used for API authorization, or null.
-//  * @property {boolean} isAuthenticated - Derived state: true if both user and token exist.
-//  * @property {(username: string, password: string) => Promise<boolean>} login - Function to handle user login, returning success status.
-//  * @property {() => void} logout - Function to handle user logout and clear credentials.
-//  */
-// type AuthContextType = {
-//     user: User | null
-//     token: string | null
-//     isAuthenticated: boolean
-//     login: (username: string, password: string) => Promise<boolean>
-//     logout: () => void
-// }
-
-// // Creates the context object. The initial value is set to indefined
-// // and consuming components must handle this possibility or rely on the provider.
-// const AuthContext = createContext<AuthContextType | undefined>(undefined)
-
-// /**
-//  * @function AuthProvider
-//  * @description The main provider component responsible for managing authentication state,
-//  * handling persistence (via localStorage), and providing the context to children.
-//  * @param {Object} props - Component properties.
-//  * @param {ReactNode} props.children - The child components wrapped by this provider.
-//  * @returns {JSX.Element | null} The Context Provider component, or null during initial loading.
-//  */
-// export function AuthProvider({ children }: { children: ReactNode }) {
-//     // State to hold the authenticated user's data.
-//     const [user, setUser] = useState<User | null>(null)
-//     // State to hold the JWT token.
-//     const [token, setToken] = useState<string | null>(null)
-//     // State to track the initial check for persisted credentials.
-//     const [isLoading, setIsLoading] = useState(true)
-
-//     // Effects runs once on component mount ([]) to check for persisted credentials.
-//     useEffect(() => {
-//         const storedUser = localStorage.getItem("cp:user")
-//         const storedToken = localStorage.getItem("cp:token")
-
-//         // If both token and user data are found in localStorage, restore the session.
-//         if (storedUser && storedToken) {
-//             setUser(JSON.parse(storedUser))
-//             setToken(storedToken)
-//         }
-
-//         // Marks the loading process as complete, allowing the app to render.
-//         setIsLoading(false)
-
-//         // CRITICAL MISSING IMPROVEMENT: This implementation relies on localStorage, which is vulnerable
-//         // to XSS attacks. For professional security, tokens should preferably be stored in
-//         // HttpOnly cookies managed by the API route.
-//     }, [])
-
-//     const login = async (username: string, password: string): Promise<boolean> => {
-//         try {
-//             const res = await fetch("/api/auth/login", {
-//                 method: "POST",
-//                 headers: {
-//                     "Content-Type": "application/json",
-//                 },
-//                 body: JSON.stringify({ username, password }),
-//             })
-
-//             if (!res.ok) return false
-
-//             const data = await res.json()
-
-//             const loggedUser: User = data.user
-//             const jwtToken: string = data.token
-
-//             setUser(loggedUser)
-//             setToken(jwtToken)
-
-//             localStorage.setItem("cp:user", JSON.stringify(loggedUser))
-//             localStorage.setItem("cp:token", jwtToken)
-
-//             return true
-//         } catch (err) {
-//             console.error("Erro no login:", err)
-//             return false
-//         }
-//     }
-
-//     const logout = () => {
-//         setUser(null)
-//         setToken(null)
-
-//         localStorage.removeItem("cp:user")
-//         localStorage.removeItem("cp:token")
-//     }
-
-//     const value: AuthContextType = {
-//         user,
-//         token,
-//         isAuthenticated: !!user && !!token,
-//         login,
-//         logout,
-//     }
-
-//     if (isLoading) {
-//         return null
-//     }
-
-//     return (
-//         <AuthContext.Provider value={value}>
-//             {children}
-//         </AuthContext.Provider>
-//     )
-// }
-
-// export function useAuth() {
-//     const context = useContext(AuthContext)
-
-//     if (!context) {
-//         throw new Error("useAuth must be used within an AuthProvider")
-//     }
-
-//     return context
-// }
-
 // lib/auth-context.tsx
 
 "use client"
@@ -157,72 +10,73 @@ import {
     type ReactNode,
 } from "react"
 
-/**
- * Represents the authenticated user returned by the backend.
- * IMPORTANT: This object is NOT a source of truth for authentication.
- * The real auth state is validated server-side via HttpOnly cookies.
- */
+// Defines the shape of the user object retrieved after successful authentication.
 export type User = {
     id: string
     username: string
 }
 
-/**
- * Authentication context contract.
- * NOTE:
- * - No token is exposed to the frontend
- * - Authentication is cookie-based (HttpOnly)
- */
+// Defines the structure of the autenthication context and methods.
 type AuthContextType = {
-    user: User | null
-    isAuthenticated: boolean
+    user: User | null       // The authenticated user object, or null if unauthorized.
+    isAuthenticated: boolean        // Boolean flag indicating the authentication status.
+    // Function to handle the login process, expecting username/password, returns success status.
     login: (username: string, password: string) => Promise<boolean>
+    // Function to handle the logout process.
     logout: () => Promise<void>
+    // Function to re-fetch the user details.
     refreshUser: () => Promise<void>
 }
 
+// Creates the React Context object, initialized to undefined.
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+    // State to hold the current authenticated user data.
     const [user, setUser] = useState<User | null>(null)
+    // State to track if the initial authentication check is still pending.
     const [isLoading, setIsLoading] = useState(true)
 
     /**
-     * Loads the authenticated user from the backend using HttpOnly cookies.
-     * This is the ONLY trusted way to restore a session.
+     * Fetches the current user details from the server's "/api/auth/me" endpoint.
+     * This is used to check for an existing session on application load.
+     * @returns {Promise<void>}
      */
     const refreshUser = async () => {
+        // Sends a GET request to the 'me' endpoint.
         try {
             const res = await fetch("/api/auth/me", {
-                credentials: "include", // 👈 required for cookies
+                // credentials: include is essential to send the HTTP-only cookie along with the request.
+                credentials: "include",
             })
 
+            // If the response is not OK, the user is not authenticated.
             if (!res.ok) {
                 setUser(null)
                 return
             }
 
+            // Parses the successful response and sets the user state.
             const data = await res.json()
             setUser(data.user)
         } catch (error) {
             console.error("Erro ao obter utilizador:", error)
+            // Ensures the user state is null on network or parsing errors.
             setUser(null)
         }
     }
 
-    /**
-     * Initial authentication check on app load.
-     */
+    // Effect Hook: Runs once on component mount to perform the initial session check.
     useEffect(() => {
+        // Calls refreshUser and uses .finally() to set isLoading to false regardless of success or failure.
         refreshUser().finally(() => setIsLoading(false))
-    }, [])
+    }, [])      // Empty dependency array ensures it runs only once.
 
     /**
-     * Performs login.
-     * The backend must:
-     * - validate credentials
-     * - set an HttpOnly cookie with the JWT
-     * - return the user object (NO TOKEN)
+     * Handles the user login process by sending credentials to the server.
+     * @param {string} username The user's provided username.
+     * @param {string} password The user's provided password.
+     * @returns {Promise<boolean>} True if login was successful, false otherwise.
      */
     const login = async (
         username: string,
@@ -234,12 +88,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                credentials: "include", // 👈 essential
-                body: JSON.stringify({ username, password }),
+                credentials: "include",     // Required to accept the Set-Cookie header from the server.
+                body: JSON.stringify({ username, password }),       // Sends credentials to the server.
             })
 
+            // If login failed (e.g., 401 Unauthorized), return false.
             if (!res.ok) return false
 
+            // Parses the response (which should contain user data) and sets the state.
             const data = await res.json()
             setUser(data.user)
 
@@ -251,32 +107,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     /**
-     * Logs out securely by invalidating the cookie on the backend.
+     * Handles the user logout process by informing the server to delete the session cookie.
+     * @returns {Promise<void>}
      */
     const logout = async () => {
         try {
+            // Sends a POST request to the logout endpoint. The server will respond by expiring the cookie.
             await fetch("/api/auth/logout", {
                 method: "POST",
                 credentials: "include",
             })
         } finally {
+            // Regardless of the server response, immediately clear the local user state to log out the client.
             setUser(null)
         }
     }
 
+    // Memoized value object containing the state and methods for the context provider.
     const value: AuthContextType = {
         user,
-        isAuthenticated: !!user,
+        isAuthenticated: !!user,        // Converts 'user' (object or null) to a boolean.
         login,
         logout,
         refreshUser,
     }
 
-    // Prevents UI flicker and unauthorized rendering
+    // Renders nothing while the initial session check is ongoing to prevent flicker/inconsistent state.
     if (isLoading) {
         return null
     }
 
+    // Provides the authentication context value to the children components.
     return (
         <AuthContext.Provider value={value}>
             {children}
@@ -284,9 +145,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     )
 }
 
+/**
+ * Custom hook to consume the authentication context.
+ * * @returns {AuthContextType} The authentication context object.
+ * @throws {Error} Throws an error if called outside of the AuthProvider.
+ */
 export function useAuth() {
+    // Accesses the context value.
     const context = useContext(AuthContext)
 
+    // Guards against usage outside the provider, ensuring 'context' is defined.
     if (!context) {
         throw new Error("useAuth must be used within an AuthProvider")
     }

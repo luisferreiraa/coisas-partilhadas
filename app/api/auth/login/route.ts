@@ -1,91 +1,3 @@
-// // app/api/auth/login/route.ts
-
-// import { NextResponse } from "next/server" // Imports the NextResponse object from Next.js, used to create and return HTTP responses from API routes.
-// import bcrypt from "bcrypt" // Imports the bcrypt library for secure password hashing and comparison.
-// import jwt from "jsonwebtoken" // Imports the jsonwebtoken library for creating and verifying JSON Web Tokens (JWTs).
-// import prisma from "@/lib/prisma" // Imports the Prisma client instance, the ORM used to interact with the database.
-
-// // Defines the secret key used to sign the JWTs.
-// const JWT_SECRET = process.env.JWT_SECRET!
-
-// /**
-//  * @async
-//  * @function POST
-//  * @description Handles the HTTP POST request for user login.
-//  * This function processes the provided username and password, authenticates the user,
-//  * and issues a JSON Web Token (JWT) upon successful verification.
-//  * 
-//  * @param req - The incoming Next.js Request object, containing the body with credentials.
-//  * @returns {Promise<NextResponse>} A Promise resolving to a JSON response containing either
-//  * the auth token and user data or an error message.
-//  */
-// export async function POST(req: Request) {
-//     try {
-//         // Extracts the username and password from the JSON body of the request.
-//         const { username, password } = await req.json()
-
-//         // Input Validation: Checks if both username and password fields were provided.
-//         if (!username || !password) {
-//             return NextResponse.json(
-//                 { error: "Username e password obrigatórios" },      // Error message for required fields.
-//                 { status: 400 }     // Returns 400 Bad Request status if validation fails.
-//             )
-//         }
-
-//         // Database lookup: Searches for a user with the provided username.
-//         const user = await prisma.user.findUnique({
-//             where: { username }
-//         })
-
-//         // User existence check: If no user is found, authentication fails.
-//         if (!user) {
-//             return NextResponse.json(
-//                 { error: "Credenciais inválidas" },     // General error message to prevent username enumeration.
-//                 { status: 401 }     // Returns 401 Unauthorized status.
-//             )
-//         }
-
-//         // Password verification: Compares the plain-text password with the hashed password stored in the database.
-//         // bcrypt.compare is asynchronous and securely handles the comparison.
-//         const isValid = await bcrypt.compare(password, user.password)
-
-//         // Password validity check: If the passwords do not match, authentication fails.
-//         if (!isValid) {
-//             return NextResponse.json(
-//                 { error: "Credenciais inválidas" },     // General error message.
-//                 { status: 401 }     // Returns 401 Unauthorized status.
-//             )
-//         }
-
-//         // Token generation: Creates a new JSON Web Token (JWT).
-//         const token = jwt.sign(
-//             {
-//                 // Payload: Contains claims about the user. 'sub' (subject) is typically the user ID.
-//                 sub: user.id,
-//                 username: user.username
-//             },
-//             JWT_SECRET,     // The secret key for signing the token.
-//             { expiresIn: "7d" }     // Token expiry set to 7 days.
-//         )
-
-//         // Successful login response: Returns the generated token and basic user information.
-//         return NextResponse.json({
-//             token,
-//             user: {
-//                 id: user.id,
-//                 username: user.username,
-//             }
-//         })
-//     } catch (error) {
-//         // Catches unexpected errors during the process (e.g., database connection failure, JSON parsing error).
-//         console.error("Login error:", error)
-//         return NextResponse.json(
-//             { error: "Erro no login" },     // Generic server error message.
-//             { status: 500 }     // Returns 500 Internal Server Error status.
-//         )
-//     }
-// }
-
 // app/api/auth/login/route.ts
 
 import { NextResponse } from "next/server"
@@ -93,50 +5,71 @@ import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import prisma from "@/lib/prisma"
 
+// Retrieves the JWT secret key from env variables.
+// The ! non null assertion operator is used here, assuming the variable is always set.
 const JWT_SECRET = process.env.JWT_SECRET!
 
+/**
+ * Handles HTTP POST requests for the login route.
+ * This is the main function for user authentication.
+ * @param {Request} req The incoming Next.js Request object, containing the request body (username and password). 
+ * @returns {Promise<NextResponse>} A Promise that resolves the NextResponse object, containing the authentication result (token, user info) or an error.
+ */
 export async function POST(req: Request) {
     try {
+        // Extracts the JSON body from the request, expecting 'username' and 'password'.
         const { username, password } = await req.json()
 
+        // Input validation: Checks if both username and password were provided in the request body.
         if (!username || !password) {
+            // If neither is missing, returns a 400 Bad Request response.
             return NextResponse.json(
                 { error: "Username e password obrigatórios" },
                 { status: 400 }
             )
         }
 
+        // Database interaction: Searches for a unique user record on the provided username.
         const user = await prisma.user.findUnique({
             where: { username },
         })
 
+        // User existence check: Verifies if a user with the given username was found.
         if (!user) {
+            // If no user is found, returns a 401 Unauthorized response.
             return NextResponse.json(
                 { error: "Credenciais inválidas" },
                 { status: 401 }
             )
         }
 
+        // Password verification: Compares the provided plain-text password with the stored hashed password using bcrypt.
         const isValid = await bcrypt.compare(password, user.password)
 
+        // Password validity check.
         if (!isValid) {
+            // If the passwords do not match, returns a 401 Unauthorized response.
             return NextResponse.json(
                 { error: "Credenciais inválidas" },
                 { status: 401 }
             )
         }
 
-        // 🔐 JWT assinado (NUNCA enviado ao frontend)
+        // JWT Creation: If credentials are valid, a JSON Web Token (JWT) is signed.
         const token = jwt.sign(
             {
+                // The sub (subject) claim is set to the user's ID.
                 sub: user.id,
+                // The username is included in the token payload.
                 username: user.username,
             },
+            // Uses the secret key to sign the token.
             JWT_SECRET,
-            { expiresIn: "7d" }
+            { expiresIn: "7d" }     // Token expiration is set to 7 days.
         )
 
-        // 🍪 Cookie HttpOnly
+        // Response preparation: Creates a successful JSON response object.
+        // It includes sanitized user data (ID and username, excluding the password hash).
         const response = NextResponse.json({
             user: {
                 id: user.id,
@@ -144,20 +77,24 @@ export async function POST(req: Request) {
             },
         })
 
+        // Cookie Setting: Sets the JWT as a secure HTTP-only cookie.
         response.cookies.set({
-            name: "cp:token",
-            value: token,
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
-            path: "/",
-            maxAge: 60 * 60 * 24 * 7, // 7 dias
+            name: "cp:token",       // Cookie name.
+            value: token,           // The generated JWT.
+            httpOnly: true,         // Crucial for security: prevents client-side JavaScript acccess (mitigates XSS).
+            secure: process.env.NODE_ENV === "production",      // Only sends the cookie over HTTPS in production.
+            sameSite: "lax",        // Good balance for CSRF protection and usability.
+            path: "/",              // Makes the cookie available across the entire site.
+            maxAge: 60 * 60 * 24 * 7,       // Matches the 7-day token expiration in seconds.
         })
 
+        // Returns the final response with the user data and the set cookie.
         return response
     } catch (error) {
+        // Error Handling: Catches any synchronous or asynchronous errors during the login process.
         console.error("Login error:", error)
 
+        // Returns a generic 500 Internal Server Error response for unhandled exceptions.
         return NextResponse.json(
             { error: "Erro no login" },
             { status: 500 }

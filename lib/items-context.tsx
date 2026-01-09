@@ -88,7 +88,7 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
 
         const loadItems = async () => {
 
-            const ITEMS_PER_PAGE = 9        // Define the size of the pagination windown.
+            const ITEMS_PER_PAGE = 10        // Define the size of the pagination windown.
 
             try {
                 // 1. Fetch the paginated list of items from the API.
@@ -131,7 +131,7 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
                     setItems(data.items)
                 }
                 // Update the total pages for pagination display.
-                setTotalPages(data.totalPages ?? 1)
+                setTotalPages(data.pagination.totalPages ?? 1)
             } catch (err) {
                 console.error("Erro no loadItems:", err)
                 setItems([])
