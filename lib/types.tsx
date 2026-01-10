@@ -30,14 +30,14 @@ export type UpdateItemData = Partial<Omit<Item, 'id' | 'addedAt'>> & {
 // Tipo para criação
 export type CreateItemData = Omit<Item, "id" | "addedAt">
 
-export const ITEM_TYPES: { value: ItemType; label: string; icon: string }[] = [
-    { value: "livro", label: "Livros", icon: "📚" },
-    { value: "filme", label: "Filmes", icon: "🎬" },
-    { value: "serie", label: "Séries", icon: "📺" },
-    { value: "app", label: "Apps", icon: "📱" },
-    { value: "website", label: "Websites", icon: "🌐" },
-    { value: "lista", label: "Listas", icon: "📝" },
-    { value: "curso", label: "Cursos", icon: "👩‍🎓" },
-    { value: "local", label: "Locais", icon: "📍" },
-    { value: "evento", label: "Eventos", icon: "🎉" },
+export const ITEM_TYPES: { value: ItemType; label: string; icon: string, color: string }[] = [
+    { value: "livro", label: "Livros", icon: "📚", color: "#66c5cc" },
+    { value: "filme", label: "Filmes", icon: "🎬", color: "#f6cf71" },
+    { value: "serie", label: "Séries", icon: "📺", color: "#f89c74" },
+    { value: "app", label: "Apps", icon: "📱", color: "#dcb0f2" },
+    { value: "website", label: "Websites", icon: "🌐", color: "#87c55f" },
+    { value: "lista", label: "Listas", icon: "📝", color: "#9eb9f3" },
+    { value: "curso", label: "Cursos", icon: "👩‍🎓", color: "#fe88b1" },
+    { value: "local", label: "Locais", icon: "📍", color: "#c9db74" },
+    { value: "evento", label: "Eventos", icon: "🎉", color: "#8be0a4" },
 ]

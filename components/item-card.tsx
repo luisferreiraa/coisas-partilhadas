@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"       // UI component for displaying small, categorized labels (tags).
 import { Button } from "@/components/ui/button"     // UI component for interactive buttons.
 import { Edit, ExternalLink, Trash2, File, FileText, Download, Heart, MoreHorizontal, Copy } from "lucide-react"     // Icons for editing, linking, deleting, and file types.
-import type { Item, ItemWithFavorite } from "@/lib/types"     // Type definition for an individual item object.
+import { ITEM_TYPES, type Item, type ItemWithFavorite } from "@/lib/types"     // Type definition for an individual item object.
 import { useItems } from "@/lib/items-context"      // Custom hook to access item management functions (like deleteItem).
 import { ItemDialog } from "@/components/item-dialog"       // Modal dialog used for editing the item.
 import {
@@ -176,9 +176,21 @@ export function ItemCard({ item }: { item: ItemWithFavorite }) {
                         {/* Badges for Type and Theme */}
                         <div className="flex flex-wrap gap-1 min-h-8 items-center">
                             {/* Primary badge for the item type */}
-                            <Badge variant="secondary" className="text-xs">
+                            {/* <Badge variant="secondary" className="text-xs">
                                 {formatType(item.type)}
-                            </Badge>
+                            </Badge> */}
+
+                            {ITEM_TYPES.map(t =>
+                                t.value === item.type ? (
+                                    <Badge
+                                        key={t.value}
+                                        className="text-xs border-0"
+                                        style={{ backgroundColor: t.color }}
+                                    >
+                                        {t.label}
+                                    </Badge>
+                                ) : null
+                            )}
 
                             {/* Mapping the first two themes as visible badges. */}
                             {visibleThemes.map((t) => (
