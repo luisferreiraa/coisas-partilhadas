@@ -19,7 +19,7 @@ type ItemsContextType = {
     items: ItemWithFavorite[]
     addItem: (item: Omit<CreateItemData, "id" | "addedAt">, files?: File[]) => Promise<void>
     updateItem: (id: string, item: UpdateItemData, files?: File[]) => Promise<void>
-    deleteItem: (id: string) => Promise<void>
+    deleteItem: (id: string) => Promise<{ error: string } | undefined>
     selectedType: ItemType | "all"
     setSelectedType: (type: ItemType | "all") => void
     selectedTheme: string
@@ -437,6 +437,11 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
             // Finds the item locally before deletion to check its theme(s) later.
             const itemToDelete = items.find(item => item.id === id)
             if (!itemToDelete) return       // Exits if item is not found in local state.
+
+            // Verification: Check if the current user is the owner of the item
+            if (itemToDelete.addedBy?.id !== user?.id) {
+                return { error: "not_owner" }
+            }
 
             // API Call: DELETE request for the specific item.
             const res = await fetch(`/api/items/${id}`, {

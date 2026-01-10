@@ -73,6 +73,8 @@ export function ItemCard({ item }: { item: ItemWithFavorite }) {
     // State to control the visibility of the "More Options" sharing popover.
     const [isShareOpen, setIsShareOpen] = useState(false)
 
+    const [isErrorOpen, setIsErrorOpen] = useState(false)
+
     // Retrieves the current user data from the authentication context.
     const { user } = useAuth()
 
@@ -158,6 +160,18 @@ export function ItemCard({ item }: { item: ItemWithFavorite }) {
 
         // Closes the share popover after the action is attempted.
         setIsShareOpen(false)
+    }
+
+    const handleDelete = async () => {
+        const result = await deleteItem(item.id)
+
+        // Check if there was an error
+        if (result && result.error === "not_owner") {
+            setIsDeleteOpen(false)
+            setIsErrorOpen(true)
+        } else {
+            setIsDeleteOpen(false)
+        }
     }
 
     // Logic to display only the first two themes directly.
@@ -353,7 +367,7 @@ export function ItemCard({ item }: { item: ItemWithFavorite }) {
                             Tens a certeza que queres eliminar "{item.title}"?
                             {/* Conditional text if an associated file exists. */}
                             {item.filePath && " O ficheiro associado também será removido."}
-                            Esta ação não pode ser desfeita.
+                            Esta acção não pode ser desfeita.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -361,14 +375,28 @@ export function ItemCard({ item }: { item: ItemWithFavorite }) {
                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
                         {/* Action button executes deletion and closes the dialog. */}
                         <AlertDialogAction
-                            onClick={() => {
-                                deleteItem(item.id)     // Call the delete function from the context.
-                                setIsDeleteOpen(false)
-                            }}
+                            onClick={handleDelete}
                             // Style the action button as destructive (red).
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
                             Eliminar
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Error Alert Dialog - Not Owner */}
+            <AlertDialog open={isErrorOpen} onOpenChange={setIsErrorOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Acção não permitida</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Apenas o criador do item pode eliminá-lo.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogAction onClick={() => setIsErrorOpen(false)}>
+                            OK
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
