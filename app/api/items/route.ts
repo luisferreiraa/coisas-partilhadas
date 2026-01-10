@@ -15,65 +15,6 @@ import { getUserFromRequest } from "@/lib/auth-server"
  * @param {Request} req - The incoming Next.js Request object.
  * @returns {Promise<NextResponse>} JSON response containing the list of items, pagination details, or an error message.
  */
-// export async function GET(req: Request) {
-//     try {
-//         const user = getUserFromRequest()
-
-//         // Extract search parameters from the request URL.
-//         const { searchParams } = new URL(req.url)
-
-//         // Determine the current page number, defaulting to 1 and ensuring it's a positive integer.
-//         const page = Math.max(
-//             1,
-//             Number(searchParams.get("page") ?? "1")
-//         )
-
-//         const pageSize = Math.max(
-//             1,
-//             Number(searchParams.get("pageSize") ?? "10")
-//         )
-
-//         const skip = (page - 1) * pageSize      // Calculate the offset for pagination (how many records to skip).
-
-//         // Fetch items from the database using Prisma, applying ordering, skipping, and limiting (taking).
-//         const items = await prisma.item.findMany({
-//             orderBy: { addedAt: "desc" },       // Order results by creation date, newest first.
-//             skip,       // Apply the offset.
-//             take: pageSize,     // Limit the number of results to the page size.
-//             include: {
-//                 addedBy: {
-//                     select: {
-//                         id: true,
-//                         username: true,
-//                     }
-//                 }
-//             }
-//         })
-
-//         // Count the total number of records in the 'item' table (for calculating total pages).
-//         const totalItems = await prisma.item.count()
-
-//         // Return a successful JSON response with the fetched items and pagination metadata.
-//         return NextResponse.json({
-//             items,
-//             pagination: {
-//                 page,
-//                 pageSize,
-//                 totalItems,
-//                 totalPages: Math.ceil(totalItems / pageSize),       // Calculate the total number of pages.
-//             },
-//         })
-//     } catch (error) {
-//         // Log the error for server-side debugging.
-//         console.error("Error fetching items:", error)
-//         // Return a 500 Internal Server Error response to the client.
-//         return NextResponse.json(
-//             { error: "Failed to fetch items" },
-//             { status: 500 }
-//         )
-//     }
-// }
-
 export async function GET(req: Request) {
     try {
         const user = await getUserFromRequest()

@@ -29,12 +29,10 @@ export async function GET(req: Request) {
             )
         }
 
-        // 🔐 Valida JWT
         const payload = jwt.verify(token, JWT_SECRET) as {
             sub: string
         }
 
-        // 🔎 Busca utilizador real
         const user = await prisma.user.findUnique({
             where: { id: payload.sub },
             select: {
