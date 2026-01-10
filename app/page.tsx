@@ -8,6 +8,7 @@
 import { useAuth } from "@/lib/auth-context" // Imports a custom hook designed to access the global authentication context and retrieve the current user's state.
 import { LoginForm } from "@/components/login-form" // Imports the component responsible for displaying the user authentication interface.
 import { Dashboard } from "@/components/dashboard" // Imports the main application component, which is the protected content.
+import { Spinner } from "@/components/ui/spinner"
 
 /**
  * @function Home
@@ -17,12 +18,31 @@ import { Dashboard } from "@/components/dashboard" // Imports the main applicati
  */
 export default function Home() {
   // Destructures the `user` object (which could be null, undefined, or the authenticated user object) from the authentication context.
-  const { user } = useAuth()
+  const { user, isLoading, authError } = useAuth()
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Spinner className="h-16 w-16" />
+      </div>
+    )
+  }
 
   // Conditional rendering: If the user object is falsy (not logged in), display the login form.
   if (!user) {
     return <LoginForm />
   }
+
+  // if (!user) {
+  //   return (
+  //     <>
+  //       {authError && (
+  //         <p className="text-red-700 text-sm text-center mt-1 mb-1">{authError}</p>
+  //       )}
+  //       <LoginForm />
+  //     </>
+  //   )
+  // }
 
   // If the user object is present (user is successfully authenticated), display the main dashboard.
   return <Dashboard />

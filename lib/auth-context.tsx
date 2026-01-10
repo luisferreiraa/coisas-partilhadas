@@ -20,6 +20,8 @@ export type User = {
 type AuthContextType = {
     user: User | null       // The authenticated user object, or null if unauthorized.
     isAuthenticated: boolean        // Boolean flag indicating the authentication status.
+    isLoading: boolean
+    authError: string | null
     // Function to handle the login process, expecting username/password, returns success status.
     login: (username: string, password: string) => Promise<boolean>
     // Function to handle the logout process.
@@ -37,12 +39,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // State to track if the initial authentication check is still pending.
     const [isLoading, setIsLoading] = useState(true)
 
+    const [authError, setAuthError] = useState<string | null>(null)
+
     /**
      * Fetches the current user details from the server's "/api/auth/me" endpoint.
      * This is used to check for an existing session on application load.
      * @returns {Promise<void>}
      */
     const refreshUser = async () => {
+
+        setIsLoading(true)
+        setAuthError(null)
+
         // Sends a GET request to the 'me' endpoint.
         try {
             const res = await fetch("/api/auth/me", {
@@ -53,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // If the response is not OK, the user is not authenticated.
             if (!res.ok) {
                 setUser(null)
+                setAuthError("A sessão expirou. Volta a fazer login.")
                 return
             }
 
@@ -63,6 +72,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.error("Erro ao obter utilizador:", error)
             // Ensures the user state is null on network or parsing errors.
             setUser(null)
+            setAuthError("Falha ao buscar utilizador. Tenta novamente.")
+        } finally {
+            setIsLoading(false)
         }
     }
 
@@ -82,6 +94,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         username: string,
         password: string
     ): Promise<boolean> => {
+
+        setAuthError(null)
+
         try {
             const res = await fetch("/api/auth/login", {
                 method: "POST",
@@ -93,7 +108,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             })
 
             // If login failed (e.g., 401 Unauthorized), return false.
-            if (!res.ok) return false
+            if (!res.ok) {
+                const message = res.status === 401
+                    ? "Credenciais inválidas"
+                    : "Login falhou. Tenta novamente"
+                setAuthError(message)
+                return false
+            }
 
             // Parses the response (which should contain user data) and sets the state.
             const data = await res.json()
@@ -102,6 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return true
         } catch (error) {
             console.error("Erro no login:", error)
+            setAuthError("Erro de ligação. Tenta novamente.")
             return false
         }
     }
@@ -120,6 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } finally {
             // Regardless of the server response, immediately clear the local user state to log out the client.
             setUser(null)
+            setAuthError(null)
         }
     }
 
@@ -127,15 +150,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const value: AuthContextType = {
         user,
         isAuthenticated: !!user,        // Converts 'user' (object or null) to a boolean.
+        isLoading,
+        authError,
         login,
         logout,
         refreshUser,
     }
 
-    // Renders nothing while the initial session check is ongoing to prevent flicker/inconsistent state.
-    if (isLoading) {
-        return null
-    }
+    // // Renders nothing while the initial session check is ongoing to prevent flicker/inconsistent state.
+    // if (isLoading) {
+    //     return null
+    // }
 
     // Provides the authentication context value to the children components.
     return (

@@ -42,11 +42,11 @@ The component's logic is extremely simple and effective for its purpose:
 
 ### A. User Experience (UX)
 
-**Area**: Missing Loading State
+~~**Area**: Missing Loading State~~
 
-**Current State**: If *user* is initially *null/undefined* while the session token is being validated (e.g., checking cookie validity or fetching user data from a server on initial load), the *LoginForm* might flash momentarily before the user is confirmed as authenticated and the *Dashboard* loads.
+~~**Current State**: If *user* is initially *null/undefined* while the session token is being validated (e.g., checking cookie validity or fetching user data from a server on initial load), the *LoginForm* might flash momentarily before the user is confirmed as authenticated and the *Dashboard* loads.~~
 
-**Recommendation**: **Implement a Loading State (Mandatory)**: The *useAuth* hook should return a *isLoading* (or *isCheckingAuth*) boolean. The component should be modified to render a <LoadingSpinner /> component if isLoading is true, ensuring a smooth transition: *if (isLoading)* return <LoadingSpinner />;.
+~~**Recommendation**: **Implement a Loading State (Mandatory)**: The *useAuth* hook should return a *isLoading* (or *isCheckingAuth*) boolean. The component should be modified to render a <LoadingSpinner /> component if isLoading is true, ensuring a smooth transition: *if (isLoading)* return <LoadingSpinner />;.~~
 
 ---
 

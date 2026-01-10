@@ -2,7 +2,7 @@
 
 "use client" // Marks this component as a Client Component, essential for using hooks and interactivity.
 
-import { useState } from "react" // Import React hook for state management.
+import { useEffect, useState } from "react" // Import React hook for state management.
 import { Button } from "@/components/ui/button" // Reusable button component.
 import { Input } from "@/components/ui/input" // Reusable input component (used for search).
 import { useAuth } from "@/lib/auth-context" // Custom hook for authentication context (user data, logout function).
@@ -46,6 +46,18 @@ export function Dashboard() {
     // Local state to control the visibility of the Add/Edit Item modal dialog.
     const [isDialogOpen, setIsDialogOpen] = useState(false)
 
+    const [searchInput, setSearchInput] = useState(searchQuery || "")
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setSearchQuery(searchInput)
+        }, 400)
+
+        return () => {
+            clearTimeout(handler)
+        }
+    }, [searchInput, setSearchQuery])
+
     return (
         <div className="min-h-screen bg-linear-to-br from-primary/5 via-background to-secondary/5">
             {/* Header section: Fixed at the top and blurred for a modern look. */}
@@ -80,10 +92,17 @@ export function Dashboard() {
                     <div className="relative">
                         {/* Search Icon placed inside the input. */}
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
+                        {/* <Input
                             placeholder="Pesquisar..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)} // Update search query state on input change.
+                            className="pl-10 h-11"
+                        /> */}
+
+                        <Input
+                            placeholder="Pesquisar..."
+                            value={searchInput}
+                            onChange={(e) => setSearchInput(e.target.value)}
                             className="pl-10 h-11"
                         />
                     </div>

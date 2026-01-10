@@ -181,6 +181,30 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
         }
     }
 
+    const refreshThemesIfNew = async (newThemes: string[] | string) => {
+        const newThemeArray = Array.isArray(newThemes) ? newThemes : [newThemes]
+
+        const hasNewTheme = newThemeArray.some(t => !themes.includes(t))
+        if (!hasNewTheme) return
+
+        try {
+            const res = await fetch(`/api/items?page=1&pageSize=1000`, {
+                credentials: "include"
+            });
+            if (!res.ok) return
+
+            const data = await res.json()
+            if (Array.isArray(data.items)) {
+                const allThemes = Array.from(
+                    new Set(data.items.flatMap((item: Item) => item.theme))
+                ).sort() as string[]
+                setThemes(allThemes)
+            }
+        } catch (err) {
+            console.error("Erro ao atualizar themes:", err)
+        }
+    }
+
     const addItem = async (itemData: Omit<CreateItemData, "id" | "addedAt">, files?: File[]) => {
         if (!isAuthenticated) {
             console.error("Não autenticado")
@@ -222,6 +246,8 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
             // Reload items to reflect new item
             setPage(1) // Go to first page to see new item
             setReloadKey((k) => k + 1)
+
+            await refreshThemesIfNew(itemData.theme)
         } catch (err) {
             console.error(err)
         }
@@ -279,6 +305,35 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
         }
     }
 
+    // const deleteItem = async (id: string) => {
+    //     if (!isAuthenticated) {
+    //         console.error("Não autenticado")
+    //         return
+    //     }
+
+    //     try {
+
+    //         const itemToDelete = items.find(item => item.id === id)
+    //         if (!itemToDelete) return;
+
+    //         const res = await fetch(`/api/items/${id}`, {
+    //             method: "DELETE",
+    //             credentials: "include",
+    //         })
+
+    //         if (!res.ok) throw new Error("Erro ao apagar item")
+
+    //         // Remove item from local state
+    //         setItems((prev) => prev.filter((item) => item.id !== id))
+
+    //         // Adjust total items count
+    //         setTotalItems(prev => prev - 1)
+    //         await refreshThemesIfMissing(itemToDelete.theme)
+    //     } catch (err) {
+    //         console.error(err)
+    //     }
+    // }
+
     const deleteItem = async (id: string) => {
         if (!isAuthenticated) {
             console.error("Não autenticado")
@@ -286,6 +341,9 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
         }
 
         try {
+            const itemToDelete = items.find(item => item.id === id)
+            if (!itemToDelete) return;
+
             const res = await fetch(`/api/items/${id}`, {
                 method: "DELETE",
                 credentials: "include",
@@ -293,11 +351,28 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
 
             if (!res.ok) throw new Error("Erro ao apagar item")
 
-            // Remove item from local state
-            setItems((prev) => prev.filter((item) => item.id !== id))
-
-            // Adjust total items count
+            const newItems = items.filter(item => item.id !== id)
+            setItems(newItems)
             setTotalItems(prev => prev - 1)
+
+            const deletedThemesArray = Array.isArray(itemToDelete.theme) ? itemToDelete.theme : [itemToDelete.theme]
+
+            const missingTheme = deletedThemesArray.some(t => !newItems.some(item => item.theme.includes(t)))
+            if (missingTheme) {
+                const resThemes = await fetch(`/api/items?page=1&pageSize=1000`, {
+                    credentials: "include"
+                });
+                if (!resThemes.ok) return;
+
+                const data = await resThemes.json();
+                if (Array.isArray(data.items)) {
+                    const allThemes = Array.from(
+                        new Set(data.items.flatMap((item: Item) => item.theme))
+                    ).sort() as string[];
+                    setThemes(allThemes);
+                }
+            }
+
         } catch (err) {
             console.error(err)
         }

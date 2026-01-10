@@ -64,11 +64,11 @@ The component relies heavily on two main contexts:
 
 ### A. User Experience (UX) and Accessibility
 
-**Area**: Search Debouncing
+~~**Area**: Search Debouncing~~
 
-**Current State**: *onChange* calls *setSearchQuery* on every keystroke, which immediately triggers an API call via *useItems*.
+~~**Current State**: *onChange* calls *setSearchQuery* on every keystroke, which immediately triggers an API call via *useItems*.~~
 
-**Recommendation**: **Implement Debouncing** (CRITICAL): Wrap *setSearchQuery* in a debouncing function (e.g., 300-500ms delay). This significantly reduces unnecessary API requests while the user is typing, improving performance and reducing server load.
+~~**Recommendation**: **Implement Debouncing** (CRITICAL): Wrap *setSearchQuery* in a debouncing function (e.g., 300-500ms delay). This significantly reduces unnecessary API requests while the user is typing, improving performance and reducing server load.~~
 
 ---
 
