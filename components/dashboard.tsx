@@ -48,6 +48,10 @@ export function Dashboard() {
 
     const [searchInput, setSearchInput] = useState(searchQuery || "")
 
+    const THEMES_PREVIEW_COUNT = 6
+
+    const [showAllThemes, setShowAllThemes] = useState(false)
+
     useEffect(() => {
         const handler = setTimeout(() => {
             setSearchQuery(searchInput)
@@ -57,6 +61,10 @@ export function Dashboard() {
             clearTimeout(handler)
         }
     }, [searchInput, setSearchQuery])
+
+    const visibleThemes = showAllThemes
+        ? themes
+        : themes.slice(0, THEMES_PREVIEW_COUNT)
 
     return (
         <div className="min-h-screen bg-linear-to-br from-primary/5 via-background to-secondary/5">
@@ -153,7 +161,7 @@ export function Dashboard() {
                             </Badge>
 
                             {/* Dynamic Theme Filters */}
-                            {themes.map((theme) => (
+                            {visibleThemes.map((theme) => (
                                 <Badge
                                     key={theme}
                                     variant={selectedTheme === theme ? "secondary" : "outline"}
@@ -163,6 +171,20 @@ export function Dashboard() {
                                     {theme}
                                 </Badge>
                             ))}
+
+                            {themes.length > THEMES_PREVIEW_COUNT && (
+                                <Badge
+                                    variant="outline"
+                                    className="cursor-pointer px-4 py-2 text-muted-foreground"
+                                    onClick={() => setShowAllThemes(prev => !prev)}
+                                >
+                                    {showAllThemes
+                                        ? "Ver menos"
+                                        : `Ver todos (${themes.length})`
+                                    }
+                                </Badge>
+                            )}
+
                         </div>
                     )}
                 </div>
